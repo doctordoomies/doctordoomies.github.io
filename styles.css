@@ -366,7 +366,57 @@ body {
   gap: 70px;
 
   min-height: 100vh;
-  padding: 120px 0 72px;
+  padding: 120px 48px 72px;
+  overflow: hidden;
+
+  border-right: 1px solid rgba(0, 229, 255, 0.18);
+  border-left: 1px solid rgba(0, 229, 255, 0.18);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 5, 12, 0.94) 0%,
+      rgba(2, 5, 12, 0.78) 46%,
+      rgba(2, 5, 12, 0.68) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(2, 5, 12, 0.08),
+      rgba(2, 5, 12, 0.88)
+    ),
+    url("./assets/hero-banner.png") center / cover no-repeat;
+
+  box-shadow:
+    0 0 45px rgba(0, 229, 255, 0.1),
+    inset 0 -90px 100px rgba(2, 5, 12, 0.95);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 229, 255, 0.07),
+      transparent 35%,
+      rgba(123, 97, 255, 0.08)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 4px,
+      rgba(255, 255, 255, 0.012) 5px
+    );
+}
+
+.hero-copy,
+.system-card {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-copy {
@@ -864,6 +914,15 @@ body {
 
   .boot-panel {
     padding: 24px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding-right: 28px;
+    padding-left: 28px;
+
+    background-position: 32% center;
   }
 }
 
