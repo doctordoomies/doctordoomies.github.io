@@ -25,6 +25,20 @@
   --header-height: 82px;
   --section-space: clamp(6rem, 11vw, 10rem);
   --city-filter: saturate(1.08);
+
+  /* Runtime motion values. JavaScript overrides these defaults inline. */
+  --x: 0%;
+  --y: 0%;
+  --size: 1px;
+  --opacity: 0;
+  --duration: 10s;
+  --drift-x: 0px;
+  --drift-y: 0px;
+  --pointer-x: -500px;
+  --pointer-y: -500px;
+  --scroll-progress: 0;
+  --parallax-x: 0;
+  --parallax-y: 0;
 }
 
 :root[data-theme="solar"] {
@@ -70,7 +84,7 @@ body {
   overflow-x: hidden;
   color: var(--text);
   background: var(--background);
-  font-family: var(--body);
+  font-family: var(--body), sans-serif;
   font-size: 16px;
   line-height: 1.6;
   text-rendering: optimizeLegibility;
@@ -151,7 +165,7 @@ p {
   padding: 12px 18px;
   color: #02050b;
   background: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.8rem;
   font-weight: 800;
   text-decoration: none;
@@ -355,7 +369,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -385,7 +399,7 @@ p {
   border-radius: 50%;
   color: var(--accent);
   background: radial-gradient(circle, rgba(var(--accent-rgb), 0.15), transparent 65%);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 1.4rem;
   font-weight: 900;
   box-shadow: 0 0 30px rgba(var(--accent-rgb), 0.18);
@@ -395,7 +409,7 @@ p {
   min-height: 112px;
   margin: 0 0 28px;
   color: #a9c7d4;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: clamp(0.68rem, 2vw, 0.78rem);
   line-height: 1.8;
   white-space: pre-wrap;
@@ -426,7 +440,7 @@ p {
   border: 0;
   color: var(--muted);
   background: transparent;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -453,7 +467,7 @@ p {
   border: 1px solid var(--line-strong);
   color: var(--text);
   background: rgba(4, 10, 23, 0.95);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.38);
@@ -508,7 +522,7 @@ p {
   border: 1px solid rgba(var(--accent-rgb), 0.58);
   color: var(--accent);
   background: rgba(var(--accent-rgb), 0.06);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.76rem;
   font-weight: 900;
   clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
@@ -522,7 +536,7 @@ p {
 
 .logo-copy strong {
   color: var(--text-strong);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.7rem;
   letter-spacing: 0.13em;
 }
@@ -530,7 +544,7 @@ p {
 .logo-copy small {
   margin-top: 6px;
   color: var(--muted);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.52rem;
   letter-spacing: 0.09em;
 }
@@ -558,7 +572,7 @@ p {
 .nav-github {
   position: relative;
   color: var(--muted-strong);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.11em;
@@ -633,7 +647,7 @@ p {
 .command-trigger {
   padding: 0 10px 0 13px;
   color: var(--muted-strong);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -650,7 +664,7 @@ kbd {
   border-radius: 3px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.04);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.54rem;
 }
 
@@ -702,7 +716,7 @@ kbd {
 .project-index,
 .visual-coordinate,
 .project-note {
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   text-transform: uppercase;
 }
 
@@ -741,7 +755,7 @@ kbd {
   border: 1px solid var(--line-strong);
   color: var(--text);
   background: rgba(6, 14, 30, 0.74);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -816,7 +830,7 @@ kbd {
 .contact-copy h2 {
   margin: 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: clamp(3rem, 7vw, 6rem);
   font-weight: 760;
   letter-spacing: -0.055em;
@@ -846,7 +860,6 @@ kbd {
 
 .hero {
   position: relative;
-  min-height: 100vh;
   min-height: 100svh;
   padding: calc(var(--header-height) + 66px) 0 82px;
   overflow: hidden;
@@ -906,7 +919,7 @@ kbd {
 .hero h1 {
   margin: 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: clamp(4rem, 8.4vw, 8.4rem);
   font-weight: 780;
   letter-spacing: -0.072em;
@@ -921,7 +934,7 @@ kbd {
 .hero h1 .hero-intro {
   margin-bottom: 12px;
   color: var(--muted-strong);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: clamp(0.85rem, 1.25vw, 1.08rem);
   font-weight: 700;
   letter-spacing: 0.28em;
@@ -971,7 +984,7 @@ kbd {
   align-items: center;
   gap: 8px;
   color: #89a3b2;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.63rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1061,7 +1074,7 @@ kbd {
 
 .identity-core span {
   margin-top: 17px;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 1.6rem;
   font-weight: 900;
   line-height: 1;
@@ -1071,7 +1084,7 @@ kbd {
 .identity-core small {
   align-self: start;
   color: var(--muted);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.45rem;
   letter-spacing: 0.16em;
 }
@@ -1148,7 +1161,7 @@ kbd {
   border: 1px solid rgba(var(--accent-rgb), 0.23);
   color: var(--muted);
   background: rgba(3, 8, 18, 0.78);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.5rem;
   letter-spacing: 0.08em;
 }
@@ -1179,7 +1192,7 @@ kbd {
   gap: 20px;
   padding: 10px 0;
   border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.65rem;
   letter-spacing: 0.04em;
 }
@@ -1208,7 +1221,7 @@ kbd {
   border: 1px solid rgba(var(--secondary-rgb), 0.42);
   color: var(--muted-strong);
   background: rgba(var(--secondary-rgb), 0.07);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.09em;
@@ -1233,7 +1246,7 @@ kbd {
   position: absolute;
   z-index: 2;
   color: rgba(176, 207, 219, 0.35);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.5rem;
   letter-spacing: 0.14em;
 }
@@ -1257,7 +1270,7 @@ kbd {
   bottom: 0;
   z-index: -1;
   color: transparent;
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: clamp(6rem, 18vw, 18rem);
   font-weight: 900;
   letter-spacing: -0.08em;
@@ -1275,7 +1288,7 @@ kbd {
   justify-items: center;
   gap: 10px;
   color: rgba(190, 215, 225, 0.52);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.54rem;
   letter-spacing: 0.15em;
   text-decoration: none;
@@ -1318,7 +1331,7 @@ kbd {
   min-height: 58px;
   padding-inline: 26px;
   color: var(--muted-strong);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1456,7 +1469,7 @@ kbd {
   border: 1px solid rgba(var(--accent-rgb), 0.26);
   color: var(--accent);
   background: rgba(3, 8, 18, 0.72);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1478,14 +1491,14 @@ kbd {
   left: 28px;
   display: grid;
   color: #fff;
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   line-height: 0.8;
   text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.55);
 }
 
 .visual-lockup span {
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.64rem;
   letter-spacing: 0.28em;
 }
@@ -1517,7 +1530,7 @@ kbd {
 .project-content h3 {
   margin: 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: clamp(1.85rem, 4vw, 3.25rem);
   letter-spacing: -0.04em;
   line-height: 1;
@@ -1544,7 +1557,7 @@ kbd {
   border: 1px solid rgba(var(--accent-rgb), 0.16);
   color: var(--muted-strong);
   background: rgba(var(--accent-rgb), 0.035);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.55rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1564,7 +1577,7 @@ kbd {
   border: 0;
   color: var(--accent);
   background: transparent;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -1744,7 +1757,7 @@ kbd {
   border-radius: 50%;
   color: var(--secondary);
   background: rgba(9, 8, 27, 0.92);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.64rem;
   font-weight: 800;
   line-height: 1.4;
@@ -1792,7 +1805,7 @@ kbd {
   padding: 22px 0 0;
   border-top: 1px solid var(--line);
   color: #698291;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.61rem;
   letter-spacing: 0.1em;
 }
@@ -1855,14 +1868,14 @@ kbd {
 
 .principle-list article > span {
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.6rem;
 }
 
 .principle-list h3 {
   margin: -4px 0 7px;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1.4rem;
   letter-spacing: -0.02em;
 }
@@ -1928,7 +1941,7 @@ kbd {
   gap: 24px;
   margin-top: 14px;
   color: #698290;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1948,7 +1961,7 @@ kbd {
 .capability-intro h3 {
   margin: 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: clamp(2rem, 4vw, 3.5rem);
   letter-spacing: -0.04em;
   line-height: 1;
@@ -1993,13 +2006,13 @@ kbd {
   top: 26px;
   left: 18px;
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.55rem;
 }
 
 .capability-grid strong {
   color: var(--text);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
@@ -2007,7 +2020,7 @@ kbd {
 .capability-grid small {
   margin-top: 5px;
   color: #718b9b;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.58rem;
 }
 
@@ -2068,7 +2081,7 @@ kbd {
 .terminal-bar small {
   margin: 0;
   color: #718b9b;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.58rem;
   letter-spacing: 0.08em;
 }
@@ -2082,7 +2095,7 @@ kbd {
   padding: 28px;
   overflow-y: auto;
   color: #bdd3dd;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: clamp(0.72rem, 1.5vw, 0.82rem);
   line-height: 1.8;
   scrollbar-width: thin;
@@ -2126,7 +2139,7 @@ kbd {
   padding: 0 28px;
   border-top: 1px solid var(--line);
   background: rgba(var(--accent-rgb), 0.025);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.78rem;
 }
 
@@ -2143,7 +2156,7 @@ kbd {
   color: var(--text);
   background: transparent;
   caret-color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
 }
 
 .terminal-form input::placeholder {
@@ -2159,7 +2172,7 @@ kbd {
   padding: 10px 28px;
   border-top: 1px solid var(--line);
   color: #5f7989;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.6rem;
 }
 
@@ -2168,7 +2181,7 @@ kbd {
   border: 1px solid rgba(var(--accent-rgb), 0.14);
   color: var(--muted);
   background: rgba(var(--accent-rgb), 0.03);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.6rem;
   cursor: pointer;
 }
@@ -2222,7 +2235,7 @@ kbd {
   border-radius: 50%;
   color: var(--accent);
   background: #07101f;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.55rem;
   box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.08);
 }
@@ -2233,7 +2246,7 @@ kbd {
 
 .build-path strong {
   color: var(--text);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1.08rem;
 }
 
@@ -2312,7 +2325,7 @@ kbd {
   padding: 36px 24px;
   border: 1px solid var(--line);
   background: rgba(4, 9, 22, 0.55);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   text-align: center;
 }
 
@@ -2380,7 +2393,7 @@ kbd {
   gap: 24px;
   min-height: 96px;
   color: #68808e;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.61rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -2458,7 +2471,7 @@ dialog::backdrop {
 .scan-eyebrow {
   margin: 0;
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.58rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -2468,7 +2481,7 @@ dialog::backdrop {
 .scan-window-header h2 {
   margin: 4px 0 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1.7rem;
   letter-spacing: -0.03em;
   text-transform: uppercase;
@@ -2481,7 +2494,7 @@ dialog::backdrop {
   border: 1px solid var(--line);
   color: var(--accent);
   background: rgba(var(--accent-rgb), 0.04);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 1.45rem;
   line-height: 1;
   cursor: pointer;
@@ -2518,7 +2531,7 @@ dialog::backdrop {
   outline: 0;
   color: var(--text);
   background: transparent;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.78rem;
   caret-color: var(--accent);
 }
@@ -2562,13 +2575,13 @@ dialog::backdrop {
 
 .command-list span {
   color: var(--accent);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.58rem;
 }
 
 .command-list strong {
   color: var(--text);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1rem;
 }
 
@@ -2587,7 +2600,7 @@ dialog::backdrop {
   margin: 0;
   padding: 36px 24px 50px;
   color: var(--muted);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.72rem;
   text-align: center;
 }
@@ -2598,7 +2611,7 @@ dialog::backdrop {
   padding: 12px 18px;
   border-top: 1px solid var(--line);
   color: #607988;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.54rem;
   text-transform: uppercase;
 }
@@ -2630,7 +2643,7 @@ dialog::backdrop {
   gap: 10px;
   padding: 12px 18px;
   border-right: 1px solid var(--line);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.63rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2737,7 +2750,7 @@ dialog::backdrop {
   border-radius: 50%;
   color: var(--accent);
   background: rgba(3, 13, 31, 0.9);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 1.25rem;
   font-weight: 900;
   box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.2), inset 0 0 22px rgba(var(--accent-rgb), 0.08);
@@ -2766,7 +2779,7 @@ dialog::backdrop {
 .scan-message-code {
   margin: 0 0 8px !important;
   color: var(--accent) !important;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.56rem;
   letter-spacing: 0.13em;
 }
@@ -2774,7 +2787,7 @@ dialog::backdrop {
 .scan-message h3 {
   margin: 0;
   color: var(--text-strong);
-  font-family: var(--display);
+  font-family: var(--display), sans-serif;
   font-size: 1.7rem;
   letter-spacing: -0.02em;
   text-transform: uppercase;
@@ -2793,7 +2806,7 @@ dialog::backdrop {
   border: 1px solid var(--accent);
   color: var(--accent);
   background: rgba(var(--accent-rgb), 0.07);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -2843,7 +2856,7 @@ dialog::backdrop {
   position: absolute;
   z-index: 24;
   color: var(--success);
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -2856,7 +2869,7 @@ dialog::backdrop {
   padding: 12px 18px;
   border-top: 1px solid var(--line);
   color: #698291;
-  font-family: var(--mono);
+  font-family: var(--mono), monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-align: center;
