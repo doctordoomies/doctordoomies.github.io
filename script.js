@@ -5,6 +5,7 @@ const selectAll = (selector, scope = document) => [...scope.querySelectorAll(sel
 
 const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+const compactLayoutQuery = window.matchMedia("(max-width: 720px)");
 
 function readStorage(storage, key, fallback = null) {
   try {
@@ -142,48 +143,195 @@ function runBootSequence() {
 bootSkip?.addEventListener("click", () => finishBoot());
 
 /* ---------------------------------------------------------
-   Palette control
+   Theme control
    --------------------------------------------------------- */
 
 const themeSwitcher = select("#theme-switcher");
+const themeMenu = select("#theme-menu");
+const currentThemeLabel = select("#current-theme-label");
+const themeOptions = selectAll("[data-theme-option]");
 const themeColorMeta = select("#theme-color-meta");
-const themes = ["sector", "solar", "ghost"];
+const themes = ["sector", "solar", "ghost", "stellar"];
 const themeLabels = {
-  sector: "Sector cyan",
-  solar: "Solar gold",
-  ghost: "Ghost mint"
+  sector: "Sector Cyan",
+  solar: "Solar Gold",
+  ghost: "Ghost Mint",
+  stellar: "Starry Night"
 };
 const themeColors = {
   sector: "#040711",
   solar: "#0b0809",
-  ghost: "#040a0d"
+  ghost: "#040a0d",
+  stellar: "#02040d"
 };
 
-function applyTheme(theme, announce = false) {
+function applyTheme(theme, announce = false, transitionOrigin = null) {
   const safeTheme = themes.includes(theme) ? theme : "sector";
-  const nextTheme = themes[(themes.indexOf(safeTheme) + 1) % themes.length];
+  const themeChanged = document.documentElement.dataset.theme !== safeTheme;
 
-  document.documentElement.dataset.theme = safeTheme;
-  themeColorMeta?.setAttribute("content", themeColors[safeTheme]);
-  themeSwitcher?.setAttribute(
-    "aria-label",
-    `${themeLabels[safeTheme]} active. Switch to ${themeLabels[nextTheme]}.`
+  function updateTheme() {
+    document.documentElement.dataset.theme = safeTheme;
+    themeColorMeta?.setAttribute("content", themeColors[safeTheme]);
+    themeSwitcher?.setAttribute(
+      "aria-label",
+      `Choose interface theme. ${themeLabels[safeTheme]} active.`
+    );
+    if (currentThemeLabel) {
+      currentThemeLabel.textContent = themeLabels[safeTheme];
+    }
+
+    themeOptions.forEach((option) => {
+      option.setAttribute("aria-checked", String(option.dataset.themeOption === safeTheme));
+    });
+
+    writeStorage(localStorage, "ns7-theme", safeTheme);
+
+    if (announce && themeChanged) {
+      showToast(`INTERFACE THEME // ${themeLabels[safeTheme].toUpperCase()}`);
+    }
+  }
+
+  const canAnimateThemeChange = (
+    announce &&
+    themeChanged &&
+    !reduceMotionQuery.matches &&
+    typeof document.startViewTransition === "function"
   );
 
-  writeStorage(localStorage, "ns7-theme", safeTheme);
+  if (canAnimateThemeChange) {
+    const switcherBounds = themeSwitcher?.getBoundingClientRect();
+    const switcherCenterX = switcherBounds
+      ? switcherBounds.left + (switcherBounds.width / 2)
+      : window.innerWidth / 2;
+    const switcherCenterY = switcherBounds
+      ? switcherBounds.top + (switcherBounds.height / 2)
+      : 42;
+    const originX = transitionOrigin?.x ?? switcherCenterX;
+    const originY = transitionOrigin?.y ?? switcherCenterY;
 
-  if (announce) {
-    showToast(`INTERFACE PALETTE // ${themeLabels[safeTheme].toUpperCase()}`);
+    document.documentElement.style.setProperty("--theme-origin-x", `${originX}px`);
+    document.documentElement.style.setProperty("--theme-origin-y", `${originY}px`);
+
+    try {
+      const transition = document.startViewTransition(updateTheme);
+      transition.finished.catch(() => {
+        // A canceled transition should never prevent the theme itself from changing.
+      });
+    } catch {
+      updateTheme();
+    }
+  } else {
+    updateTheme();
   }
+
+  return safeTheme;
 }
 
 function cycleTheme() {
   const currentTheme = document.documentElement.dataset.theme || "sector";
   const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
   applyTheme(nextTheme, true);
+  return nextTheme;
 }
 
-themeSwitcher?.addEventListener("click", cycleTheme);
+function openThemeMenu({ focusActive = false } = {}) {
+  if (!themeMenu || !themeSwitcher) {
+    return;
+  }
+
+  themeMenu.hidden = false;
+  themeSwitcher.setAttribute("aria-expanded", "true");
+
+  if (focusActive) {
+    const activeTheme = document.documentElement.dataset.theme || "sector";
+    select(`[data-theme-option="${activeTheme}"]`, themeMenu)?.focus();
+  }
+}
+
+function closeThemeMenu({ restoreFocus = false } = {}) {
+  if (!themeMenu || !themeSwitcher) {
+    return;
+  }
+
+  themeMenu.hidden = true;
+  themeSwitcher.setAttribute("aria-expanded", "false");
+
+  if (restoreFocus) {
+    themeSwitcher.focus();
+  }
+}
+
+themeSwitcher?.addEventListener("click", () => {
+  const willOpen = themeSwitcher.getAttribute("aria-expanded") !== "true";
+
+  if (willOpen) {
+    openThemeMenu();
+  } else {
+    closeThemeMenu();
+  }
+});
+
+themeSwitcher?.addEventListener("keydown", (event) => {
+  if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    openThemeMenu({ focusActive: true });
+  }
+});
+
+themeOptions.forEach((option, index) => {
+  option.addEventListener("click", () => {
+    const optionBounds = option.getBoundingClientRect();
+    const transitionOrigin = {
+      x: optionBounds.left + (optionBounds.width / 2),
+      y: optionBounds.top + (optionBounds.height / 2)
+    };
+    const mobileNavigationOpen = select("#nav-toggle")?.getAttribute("aria-expanded") === "true";
+    closeThemeMenu({ restoreFocus: !mobileNavigationOpen });
+    if (mobileNavigationOpen) {
+      closeNavigation({ restoreFocus: true });
+    }
+    applyTheme(option.dataset.themeOption, true, transitionOrigin);
+  });
+
+  option.addEventListener("keydown", (event) => {
+    let nextIndex = null;
+
+    if (event.key === "ArrowDown") {
+      nextIndex = (index + 1) % themeOptions.length;
+    } else if (event.key === "ArrowUp") {
+      nextIndex = (index - 1 + themeOptions.length) % themeOptions.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = themeOptions.length - 1;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeThemeMenu({ restoreFocus: true });
+      return;
+    } else if (event.key === "Tab") {
+      closeThemeMenu();
+      return;
+    }
+
+    if (nextIndex !== null) {
+      event.preventDefault();
+      themeOptions[nextIndex]?.focus();
+    }
+  });
+});
+
+document.addEventListener("click", (event) => {
+  if (!themeMenu?.hidden && !event.target.closest(".theme-control")) {
+    closeThemeMenu();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && themeMenu && !themeMenu.hidden) {
+    closeThemeMenu({ restoreFocus: true });
+  }
+});
+
 applyTheme(document.documentElement.dataset.theme || "sector");
 
 /* ---------------------------------------------------------
@@ -191,8 +339,43 @@ applyTheme(document.documentElement.dataset.theme || "sector");
    --------------------------------------------------------- */
 
 const particlesContainer = select("#particles");
+const stellarStarfield = select("#stellar-starfield");
 const pointerAura = select("#pointer-aura");
 const hero = select(".hero");
+
+function createStarfield() {
+  if (!stellarStarfield) {
+    return;
+  }
+
+  const count = compactLayoutQuery.matches ? 38 : 76;
+  const fragment = document.createDocumentFragment();
+
+  for (let index = 0; index < count; index += 1) {
+    const star = document.createElement("span");
+    const size = Math.random() * 2.2 + 0.65;
+
+    star.className = "stellar-star";
+    if (index % 13 === 0) {
+      star.classList.add("is-gold");
+    } else if (index % 9 === 0) {
+      star.classList.add("is-blue");
+    }
+
+    star.style.left = `${Math.random() * 100}%`;
+    star.style.top = `${Math.random() * 100}%`;
+    star.style.width = `${size}px`;
+    star.style.height = `${size}px`;
+    star.style.opacity = String(Math.random() * 0.62 + 0.24);
+    star.style.animationDelay = `${Math.random() * -8}s`;
+    star.style.animationDuration = `${Math.random() * 5 + 3.5}s`;
+    fragment.appendChild(star);
+  }
+
+  stellarStarfield.replaceChildren(fragment);
+}
+
+compactLayoutQuery.addEventListener?.("change", createStarfield);
 
 function createParticles() {
   if (!particlesContainer || reduceMotionQuery.matches) {
@@ -230,9 +413,26 @@ function enablePointerLighting() {
   let pointerX = -500;
   let pointerY = -500;
 
+  function resetPointerWorld() {
+    pointerAura.classList.remove("is-active");
+    hero?.style.setProperty("--parallax-x", "0");
+    hero?.style.setProperty("--parallax-y", "0");
+    document.documentElement.style.setProperty("--stellar-x", "0px");
+    document.documentElement.style.setProperty("--stellar-y", "0px");
+    document.documentElement.style.setProperty("--stellar-far-x", "0px");
+    document.documentElement.style.setProperty("--stellar-far-y", "0px");
+  }
+
   function renderPointer() {
     pointerAura.style.setProperty("--pointer-x", `${pointerX}px`);
     pointerAura.style.setProperty("--pointer-y", `${pointerY}px`);
+
+    const skyHorizontal = ((pointerX / window.innerWidth) - 0.5) * 10;
+    const skyVertical = ((pointerY / window.innerHeight) - 0.5) * 7;
+    document.documentElement.style.setProperty("--stellar-x", `${skyHorizontal.toFixed(2)}px`);
+    document.documentElement.style.setProperty("--stellar-y", `${skyVertical.toFixed(2)}px`);
+    document.documentElement.style.setProperty("--stellar-far-x", `${(-skyHorizontal * 0.4).toFixed(2)}px`);
+    document.documentElement.style.setProperty("--stellar-far-y", `${(-skyVertical * 0.4).toFixed(2)}px`);
 
     if (hero) {
       const horizontal = ((pointerX / window.innerWidth) - 0.5) * 7;
@@ -245,7 +445,7 @@ function enablePointerLighting() {
   }
 
   window.addEventListener("pointermove", (event) => {
-    if (event.pointerType && event.pointerType !== "mouse") {
+    if (reduceMotionQuery.matches || (event.pointerType && event.pointerType !== "mouse")) {
       return;
     }
 
@@ -259,13 +459,8 @@ function enablePointerLighting() {
     }
   }, { passive: true });
 
-  document.documentElement.addEventListener("mouseleave", () => {
-    pointerAura.classList.remove("is-active");
-    hero?.style.setProperty("--parallax-x", "0");
-    hero?.style.setProperty("--parallax-y", "0");
-  });
-
-  window.addEventListener("blur", () => pointerAura.classList.remove("is-active"));
+  document.documentElement.addEventListener("mouseleave", resetPointerWorld);
+  window.addEventListener("blur", resetPointerWorld);
 }
 
 /* ---------------------------------------------------------
@@ -300,6 +495,7 @@ function closeNavigation({ restoreFocus = false } = {}) {
     return;
   }
 
+  closeThemeMenu();
   navToggle.setAttribute("aria-expanded", "false");
   navToggle.setAttribute("aria-label", "Open navigation");
   navPanel.classList.remove("is-open");
@@ -654,8 +850,8 @@ function executeTerminalCommand(rawCommand) {
   } else if (command === "clear") {
     terminalOutput?.replaceChildren();
   } else if (command === "theme") {
-    cycleTheme();
-    appendTerminalLine(`Palette shifted to ${themeLabels[document.documentElement.dataset.theme]}.`);
+    const nextTheme = cycleTheme();
+    appendTerminalLine(`Interface shifted to ${themeLabels[nextTheme]}.`);
   } else if (command === "scan") {
     appendTerminalLine("Anomaly scanner initialized. Opening secure channel...");
     window.setTimeout(() => openScanner(terminalInput), 260);
@@ -1078,6 +1274,8 @@ scanField?.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("visibilitychange", () => {
+  document.documentElement.classList.toggle("page-hidden", document.hidden);
+
   if (!gameRunning) {
     return;
   }
@@ -1103,6 +1301,7 @@ document.addEventListener("visibilitychange", () => {
    --------------------------------------------------------- */
 
 runBootSequence();
+createStarfield();
 createParticles();
 enablePointerLighting();
 initializeReveals();
@@ -1117,6 +1316,13 @@ window.setInterval(updateLocalTime, 1000);
 reduceMotionQuery.addEventListener?.("change", (event) => {
   if (event.matches) {
     particlesContainer?.replaceChildren();
+    pointerAura?.classList.remove("is-active");
+    hero?.style.setProperty("--parallax-x", "0");
+    hero?.style.setProperty("--parallax-y", "0");
+    document.documentElement.style.setProperty("--stellar-x", "0px");
+    document.documentElement.style.setProperty("--stellar-y", "0px");
+    document.documentElement.style.setProperty("--stellar-far-x", "0px");
+    document.documentElement.style.setProperty("--stellar-far-y", "0px");
     revealElements.forEach((element) => element.classList.add("is-visible"));
     finishBoot();
   } else {

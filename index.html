@@ -52,7 +52,7 @@
     document.documentElement.classList.add("js");
     try {
       const savedTheme = localStorage.getItem("ns7-theme");
-      if (["sector", "solar", "ghost"].includes(savedTheme)) {
+      if (["sector", "solar", "ghost", "stellar"].includes(savedTheme)) {
         document.documentElement.dataset.theme = savedTheme;
       }
     } catch (error) {
@@ -68,6 +68,39 @@
   <div class="site-background" aria-hidden="true">
     <div class="ambient-light ambient-light-one"></div>
     <div class="ambient-light ambient-light-two"></div>
+    <div class="stellar-sky">
+      <div class="stellar-nebula"></div>
+      <div class="stellar-starfield" id="stellar-starfield"></div>
+      <svg class="stellar-constellations" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice">
+        <g class="constellation constellation-one">
+          <path d="M104 182 188 124 271 176 342 104 421 159"/>
+          <circle cx="104" cy="182" r="3"/>
+          <circle cx="188" cy="124" r="4"/>
+          <circle cx="271" cy="176" r="3"/>
+          <circle cx="342" cy="104" r="4"/>
+          <circle cx="421" cy="159" r="3"/>
+        </g>
+        <g class="constellation constellation-two">
+          <path d="M798 246 856 187 918 228 982 166 1074 214 1118 145"/>
+          <circle cx="798" cy="246" r="3"/>
+          <circle cx="856" cy="187" r="4"/>
+          <circle cx="918" cy="228" r="3"/>
+          <circle cx="982" cy="166" r="4"/>
+          <circle cx="1074" cy="214" r="3"/>
+          <circle cx="1118" cy="145" r="4"/>
+        </g>
+        <g class="constellation constellation-three">
+          <path d="M535 608 602 547 673 580 728 512"/>
+          <circle cx="535" cy="608" r="3"/>
+          <circle cx="602" cy="547" r="4"/>
+          <circle cx="673" cy="580" r="3"/>
+          <circle cx="728" cy="512" r="4"/>
+        </g>
+      </svg>
+      <span class="shooting-star shooting-star-one"></span>
+      <span class="shooting-star shooting-star-two"></span>
+      <span class="shooting-star shooting-star-three"></span>
+    </div>
     <div class="grid-layer"></div>
     <div class="particles" id="particles"></div>
     <div class="scanlines"></div>
@@ -144,15 +177,45 @@
         </div>
 
         <div class="nav-tools">
-          <button
-            class="theme-switcher"
-            id="theme-switcher"
-            type="button"
-            aria-label="Change interface palette"
-            title="Change interface palette"
-          >
-            <span></span><span></span><span></span>
-          </button>
+          <div class="theme-control">
+            <button
+              class="theme-switcher"
+              id="theme-switcher"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="theme-menu"
+              aria-label="Choose interface theme"
+            >
+              <span class="theme-switcher-icon" aria-hidden="true"><i></i></span>
+              <span class="theme-switcher-label" id="current-theme-label">Sector</span>
+              <span class="theme-switcher-chevron" aria-hidden="true">⌄</span>
+            </button>
+
+            <div class="theme-menu" id="theme-menu" role="menu" aria-label="Interface themes" hidden>
+              <p>INTERFACE_THEME</p>
+              <button type="button" role="menuitemradio" aria-checked="true" data-theme-option="sector">
+                <span class="theme-swatch swatch-sector" aria-hidden="true"></span>
+                <span><strong>Sector Cyan</strong><small>Original neon city</small></span>
+                <i aria-hidden="true">01</i>
+              </button>
+              <button type="button" role="menuitemradio" aria-checked="false" data-theme-option="solar">
+                <span class="theme-swatch swatch-solar" aria-hidden="true"></span>
+                <span><strong>Solar Gold</strong><small>Warm signal flare</small></span>
+                <i aria-hidden="true">02</i>
+              </button>
+              <button type="button" role="menuitemradio" aria-checked="false" data-theme-option="ghost">
+                <span class="theme-swatch swatch-ghost" aria-hidden="true"></span>
+                <span><strong>Ghost Mint</strong><small>Cool spectral interface</small></span>
+                <i aria-hidden="true">03</i>
+              </button>
+              <button type="button" role="menuitemradio" aria-checked="false" data-theme-option="stellar">
+                <span class="theme-swatch swatch-stellar" aria-hidden="true"></span>
+                <span><strong>Starry Night</strong><small>Deep-space observatory</small></span>
+                <i aria-hidden="true">04</i>
+              </button>
+            </div>
+          </div>
 
           <button
             class="command-trigger"
@@ -180,6 +243,16 @@
   <main id="main-content" tabindex="-1">
     <section class="hero" id="home" aria-labelledby="hero-title">
       <div class="hero-city" aria-hidden="true"></div>
+      <div class="hero-celestial" aria-hidden="true">
+        <div class="celestial-orbit celestial-orbit-one"></div>
+        <div class="celestial-orbit celestial-orbit-two"></div>
+        <div class="celestial-body">
+          <span class="celestial-crater crater-one"></span>
+          <span class="celestial-crater crater-two"></span>
+          <span class="celestial-crater crater-three"></span>
+          <i></i>
+        </div>
+      </div>
       <div class="hero-vignette" aria-hidden="true"></div>
       <span class="hero-coordinate coordinate-one" aria-hidden="true">40.7128° N // 74.0060° W</span>
       <span class="hero-coordinate coordinate-two" aria-hidden="true">SIGNAL // A7-2026</span>

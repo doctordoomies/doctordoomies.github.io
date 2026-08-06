@@ -39,6 +39,25 @@
   --scroll-progress: 0;
   --parallax-x: 0;
   --parallax-y: 0;
+  --stellar-x: 0px;
+  --stellar-y: 0px;
+  --stellar-far-x: 0px;
+  --stellar-far-y: 0px;
+  --theme-origin-x: 50vw;
+  --theme-origin-y: 42px;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-world-reveal 720ms cubic-bezier(0.2, 0.78, 0.2, 1) both;
 }
 
 :root[data-theme="solar"] {
@@ -63,6 +82,28 @@
   --line: rgba(125, 255, 213, 0.18);
   --line-strong: rgba(125, 255, 213, 0.5);
   --city-filter: hue-rotate(-20deg) saturate(0.82) brightness(1.04);
+}
+
+:root[data-theme="stellar"] {
+  --background: #02040d;
+  --background-rgb: 2, 4, 13;
+  --background-raised: #080d20;
+  --surface: rgba(7, 13, 34, 0.8);
+  --surface-solid: #070d20;
+  --surface-soft: rgba(10, 18, 43, 0.62);
+  --text: #f3f7ff;
+  --text-strong: #ffffff;
+  --muted: #9baac4;
+  --muted-strong: #c4d0e4;
+  --accent: #8ed3ff;
+  --accent-rgb: 142, 211, 255;
+  --secondary: #ffd27f;
+  --secondary-rgb: 255, 210, 127;
+  --hot: #d99bff;
+  --success: #a8f8df;
+  --line: rgba(150, 197, 255, 0.18);
+  --line-strong: rgba(152, 211, 255, 0.48);
+  --city-filter: saturate(1.04);
 }
 
 *,
@@ -217,6 +258,148 @@ p {
   left: -22%;
   background: rgba(var(--accent-rgb), 0.38);
   animation: ambient-drift-two 27s ease-in-out infinite alternate;
+}
+
+.stellar-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(1.03);
+  transition: opacity 700ms ease, transform 1200ms ease;
+}
+
+.stellar-nebula {
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(ellipse at 72% 20%, rgba(104, 126, 255, 0.2), transparent 30%),
+    radial-gradient(ellipse at 20% 62%, rgba(56, 124, 212, 0.13), transparent 34%),
+    radial-gradient(ellipse at 54% 78%, rgba(255, 192, 112, 0.07), transparent 26%),
+    linear-gradient(180deg, #03071a 0%, #07112c 45%, #02040d 100%);
+  filter: saturate(1.12);
+}
+
+.stellar-nebula::before {
+  content: "";
+  position: absolute;
+  inset: 8% 4% 26%;
+  opacity: 0.32;
+  background:
+    conic-gradient(from 210deg at 65% 42%, transparent, rgba(126, 150, 255, 0.13), transparent 24%),
+    conic-gradient(from 40deg at 30% 60%, transparent, rgba(71, 163, 255, 0.09), transparent 28%);
+  filter: blur(48px);
+  animation: nebula-breathe 18s ease-in-out infinite alternate;
+}
+
+.stellar-starfield,
+.stellar-constellations {
+  position: absolute;
+  inset: 0;
+}
+
+.stellar-starfield {
+  transform: translate3d(var(--stellar-x), var(--stellar-y), 0) scale(1.015);
+  transition: transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.stellar-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 7px rgba(188, 222, 255, 0.72);
+  animation-name: stellar-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.stellar-star.is-gold {
+  background: #ffe2a6;
+  box-shadow: 0 0 9px rgba(255, 210, 127, 0.74);
+}
+
+.stellar-star.is-blue {
+  background: #a4dfff;
+  box-shadow: 0 0 10px rgba(104, 179, 255, 0.78);
+}
+
+.stellar-constellations {
+  width: 100%;
+  height: 100%;
+  opacity: 0.28;
+  transform: translate3d(var(--stellar-far-x), var(--stellar-far-y), 0) scale(1.012);
+  transition: transform 850ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.stellar-constellations path {
+  fill: none;
+  stroke: rgba(150, 205, 255, 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 5 8;
+}
+
+.stellar-constellations circle {
+  fill: #e9f7ff;
+  filter: drop-shadow(0 0 5px #8ed3ff);
+}
+
+.constellation {
+  animation: constellation-glow 6s ease-in-out infinite alternate;
+}
+
+.constellation-two {
+  animation-delay: -2s;
+}
+
+.constellation-three {
+  animation-delay: -4s;
+}
+
+.shooting-star {
+  position: absolute;
+  z-index: 3;
+  width: 130px;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(210, 235, 255, 0.85), #ffffff);
+  box-shadow: 0 0 8px rgba(143, 210, 255, 0.55);
+  transform: rotate(-26deg);
+  animation: shooting-star 9s linear infinite;
+}
+
+.shooting-star::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 12px #ffffff;
+}
+
+.shooting-star-one {
+  top: 16%;
+  left: 18%;
+  animation-delay: 1.4s;
+}
+
+.shooting-star-two {
+  top: 42%;
+  left: 64%;
+  animation-delay: 5.8s;
+  animation-duration: 12s;
+}
+
+.shooting-star-three {
+  top: 70%;
+  left: 36%;
+  animation-delay: 8.7s;
+  animation-duration: 14s;
 }
 
 .grid-layer {
@@ -617,31 +800,156 @@ p {
   background: rgba(6, 13, 28, 0.66);
 }
 
+.theme-control {
+  position: relative;
+}
+
 .theme-switcher {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 12px;
+  gap: 8px;
+  min-width: 116px;
+  padding: 0 10px;
+  color: var(--muted-strong);
+  font-family: var(--mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
-.theme-switcher span {
-  width: 6px;
-  height: 6px;
+.theme-switcher-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(var(--accent-rgb), 0.55);
   border-radius: 50%;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
 }
 
-.theme-switcher span:nth-child(1) {
-  background: #24e6ff;
-  box-shadow: 0 0 7px #24e6ff;
+.theme-switcher-icon i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
-.theme-switcher span:nth-child(2) {
-  background: #ffca5a;
+:root[data-theme="stellar"] .theme-switcher-icon {
+  border-color: rgba(255, 210, 127, 0.66);
+  box-shadow: inset -4px -2px 0 rgba(255, 210, 127, 0.62);
 }
 
-.theme-switcher span:nth-child(3) {
-  background: #7dffd5;
+.theme-switcher-label {
+  flex: 1;
+  text-align: left;
+}
+
+.theme-switcher-chevron {
+  color: var(--accent);
+  font-size: 0.8rem;
+  transition: transform 180ms ease;
+}
+
+.theme-switcher[aria-expanded="true"] .theme-switcher-chevron {
+  transform: rotate(180deg);
+}
+
+.theme-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 1200;
+  width: min(286px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  background: rgba(4, 9, 22, 0.98);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 36px rgba(var(--accent-rgb), 0.08);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.theme-menu > p {
+  margin: 0;
+  padding: 8px 10px 11px;
+  color: #6d8797;
+  font-family: var(--mono), monospace;
+  font-size: 0.53rem;
+  letter-spacing: 0.14em;
+}
+
+.theme-menu > button {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr 24px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: color 160ms ease, background 160ms ease;
+}
+
+.theme-menu > button:hover,
+.theme-menu > button[aria-checked="true"] {
+  color: var(--text);
+  background: rgba(var(--accent-rgb), 0.065);
+}
+
+.theme-menu > button[aria-checked="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 36px;
+  background: var(--accent);
+  box-shadow: 0 0 9px var(--accent);
+}
+
+.theme-swatch {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.08);
+}
+
+.swatch-sector { background: linear-gradient(135deg, #07162b, #24e6ff 54%, #a775ff); }
+.swatch-solar { background: linear-gradient(135deg, #1d1011, #ffca5a 54%, #ff638c); }
+.swatch-ghost { background: linear-gradient(135deg, #07151a, #7dffd5 54%, #8ca5ff); }
+.swatch-stellar { background: radial-gradient(circle at 65% 28%, #fff 0 5%, #ffd27f 6% 15%, transparent 17%), linear-gradient(135deg, #05091c, #234c87); }
+
+.theme-menu button > span:nth-child(2) {
+  display: grid;
+}
+
+.theme-menu strong {
+  color: var(--text);
+  font-family: var(--display), sans-serif;
+  font-size: 0.84rem;
+}
+
+.theme-menu small {
+  margin-top: 2px;
+  color: #718a9a;
+  font-size: 0.66rem;
+}
+
+.theme-menu i {
+  color: var(--accent);
+  font-family: var(--mono), monospace;
+  font-size: 0.52rem;
+  font-style: normal;
+  text-align: right;
 }
 
 .command-trigger {
@@ -867,6 +1175,7 @@ kbd {
 }
 
 .hero-city,
+.hero-celestial,
 .hero-vignette {
   position: absolute;
   inset: 0;
@@ -877,9 +1186,104 @@ kbd {
   inset: -12px;
   background: url("./assets/neon-city-background.jpg") center / cover no-repeat;
   filter: var(--city-filter);
+  opacity: 1;
   transform: scale(1.025) translate3d(calc(var(--parallax-x, 0) * -1px), calc(var(--parallax-y, 0) * -1px), 0);
-  transition: filter 350ms ease;
+  transition: filter 350ms ease, opacity 700ms ease;
   will-change: transform;
+}
+
+.hero-celestial {
+  z-index: -4;
+  opacity: 0;
+  overflow: hidden;
+  transform: translate3d(calc(var(--parallax-x, 0) * 0.45px), calc(var(--parallax-y, 0) * 0.45px), 0);
+  transition: opacity 800ms ease;
+  pointer-events: none;
+}
+
+.celestial-body {
+  position: absolute;
+  top: 12%;
+  right: 5%;
+  width: clamp(280px, 34vw, 510px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(195, 225, 255, 0.32);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.95), rgba(179, 213, 255, 0.82) 18%, rgba(84, 119, 178, 0.72) 48%, rgba(19, 31, 72, 0.92) 72%),
+    #132148;
+  box-shadow:
+    0 0 50px rgba(142, 211, 255, 0.2),
+    0 0 140px rgba(96, 127, 255, 0.14),
+    inset -44px -36px 80px rgba(2, 5, 20, 0.55);
+}
+
+.celestial-body::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  border: 1px solid rgba(255, 210, 127, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 0 40px rgba(255, 210, 127, 0.1);
+}
+
+.celestial-body > i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 146%;
+  height: 27%;
+  border: 2px solid rgba(255, 215, 151, 0.46);
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(255, 210, 127, 0.12);
+  transform: translate(-50%, -50%) rotate(-12deg);
+}
+
+.celestial-crater {
+  position: absolute;
+  border: 1px solid rgba(220, 236, 255, 0.17);
+  border-radius: 50%;
+  background: rgba(11, 25, 61, 0.16);
+  box-shadow: inset 5px 6px 13px rgba(4, 8, 26, 0.24);
+}
+
+.crater-one {
+  top: 22%;
+  left: 20%;
+  width: 14%;
+  height: 10%;
+}
+
+.crater-two {
+  top: 47%;
+  right: 21%;
+  width: 19%;
+  height: 14%;
+}
+
+.crater-three {
+  bottom: 18%;
+  left: 37%;
+  width: 11%;
+  height: 8%;
+}
+
+.celestial-orbit {
+  position: absolute;
+  top: 38%;
+  right: -4%;
+  width: clamp(380px, 48vw, 700px);
+  aspect-ratio: 1;
+  border: 1px dashed rgba(142, 211, 255, 0.12);
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.celestial-orbit-two {
+  top: 39%;
+  right: -11%;
+  width: clamp(470px, 59vw, 860px);
+  border-color: rgba(255, 210, 127, 0.09);
 }
 
 .hero-vignette {
@@ -887,6 +1291,41 @@ kbd {
   background:
     linear-gradient(90deg, rgba(2, 5, 12, 0.98) 0%, rgba(2, 5, 12, 0.84) 42%, rgba(2, 5, 12, 0.3) 75%, rgba(2, 5, 12, 0.5) 100%),
     linear-gradient(180deg, rgba(2, 5, 12, 0.2) 0%, rgba(2, 5, 12, 0.12) 62%, var(--background) 100%);
+}
+
+:root[data-theme="stellar"] .stellar-sky {
+  opacity: 1;
+  transform: scale(1);
+}
+
+:root[data-theme="stellar"] .hero-city {
+  opacity: 0;
+}
+
+:root[data-theme="stellar"] .hero-celestial {
+  opacity: 0.68;
+}
+
+:root[data-theme="stellar"] .hero-vignette {
+  background:
+    linear-gradient(90deg, rgba(2, 4, 13, 0.98) 0%, rgba(2, 4, 13, 0.83) 43%, rgba(2, 4, 13, 0.28) 75%, rgba(2, 4, 13, 0.5) 100%),
+    linear-gradient(180deg, rgba(2, 4, 13, 0.12) 0%, rgba(2, 4, 13, 0.1) 60%, var(--background) 100%);
+}
+
+:root[data-theme="stellar"] .grid-layer {
+  opacity: 0.22;
+}
+
+:root[data-theme="stellar"] .scanlines {
+  opacity: 0.16;
+}
+
+:root[data-theme="stellar"] .ambient-light-one {
+  background: rgba(72, 92, 220, 0.42);
+}
+
+:root[data-theme="stellar"] .ambient-light-two {
+  background: rgba(255, 194, 108, 0.16);
 }
 
 .hero::after {
@@ -2905,6 +3344,48 @@ dialog::backdrop {
   to { transform: translate3d(14%, -8%, 0) scale(0.92); }
 }
 
+@keyframes theme-world-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-origin-x) var(--theme-origin-y));
+    filter: brightness(1.18) saturate(0.86);
+  }
+
+  to {
+    clip-path: circle(150vmax at var(--theme-origin-x) var(--theme-origin-y));
+    filter: brightness(1) saturate(1);
+  }
+}
+
+@keyframes nebula-breathe {
+  to { opacity: 0.72; transform: translate3d(2%, -1%, 0) scale(1.04); }
+}
+
+@keyframes stellar-twinkle {
+  to { opacity: 1; transform: scale(1.45); filter: brightness(1.35); }
+}
+
+@keyframes constellation-glow {
+  to { opacity: 0.42; }
+}
+
+@keyframes shooting-star {
+  0%,
+  78% {
+    opacity: 0;
+    translate: -160px -90px;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  92%,
+  100% {
+    opacity: 0;
+    translate: 460px 230px;
+  }
+}
+
 @keyframes particle-drift {
   to { transform: translate3d(var(--drift-x), var(--drift-y), 0); }
 }
@@ -2968,6 +3449,14 @@ dialog::backdrop {
 
 @keyframes hit-float {
   to { opacity: 0; transform: translateY(-38px) scale(1.15); }
+}
+
+.page-hidden .stellar-sky * {
+  animation-play-state: paused !important;
+}
+
+.page-hidden .stellar-nebula::before {
+  animation-play-state: paused !important;
 }
 
 /* Responsive */
@@ -3173,6 +3662,19 @@ dialog::backdrop {
     justify-content: stretch;
   }
 
+  .theme-control {
+    flex: 1;
+  }
+
+  .theme-switcher {
+    width: 100%;
+  }
+
+  .theme-menu {
+    right: auto;
+    left: 0;
+  }
+
   .command-trigger {
     display: none;
   }
@@ -3189,6 +3691,22 @@ dialog::backdrop {
 
   .hero-city {
     background-position: 62% center;
+  }
+
+  .celestial-body {
+    top: 15%;
+    right: -22%;
+    width: clamp(240px, 72vw, 360px);
+  }
+
+  .celestial-orbit {
+    right: -36%;
+  }
+
+  .stellar-constellations {
+    right: auto;
+    left: -16%;
+    width: 150%;
   }
 
   .hero-vignette {
@@ -3527,6 +4045,16 @@ dialog::backdrop {
 
   .pointer-aura,
   .particles {
+    display: none;
+  }
+
+  .stellar-nebula::before,
+  .stellar-star,
+  .constellation {
+    animation: none !important;
+  }
+
+  .shooting-star {
     display: none;
   }
 
