@@ -120,6 +120,7 @@ function addPointerGlow() {
 /* =========================================================
    NEON SECTOR SCAN MINI-GAME
    ========================================================= */
+// just adding this to retry building the website.
 
 document.addEventListener("DOMContentLoaded", () => {
   const openButton = document.getElementById("open-sector-scan");
