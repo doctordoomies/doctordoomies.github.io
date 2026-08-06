@@ -232,6 +232,74 @@
     </section>
   </main>
 
+  <div class="sector-scan-overlay" id="sector-scan-overlay" aria-hidden="true">
+  <div class="sector-scan-window">
+
+    <div class="scan-window-header">
+      <div>
+        <p class="scan-eyebrow">NEON SECTOR-7 SECURITY SYSTEM</p>
+        <h2>ANOMALY SCANNER</h2>
+      </div>
+
+      <button
+        class="scan-close-button"
+        id="close-sector-scan"
+        type="button"
+        aria-label="Close sector scanner"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="scan-status-bar">
+      <div>
+        SCORE
+        <strong id="scan-score">000</strong>
+      </div>
+
+      <div>
+        TIME
+        <strong id="scan-time">20</strong>
+      </div>
+
+      <div>
+        STATUS
+        <strong id="scan-status">STANDBY</strong>
+      </div>
+    </div>
+
+      <div class="scan-field" id="scan-field">
+        <div class="radar-grid"></div>
+        <div class="radar-circle radar-circle-one"></div>
+        <div class="radar-circle radar-circle-two"></div>
+        <div class="radar-circle radar-circle-three"></div>
+
+        <div class="radar-crosshair radar-crosshair-horizontal"></div>
+        <div class="radar-crosshair radar-crosshair-vertical"></div>
+
+        <div class="radar-sweep"></div>
+
+        <div class="scanner-center">
+          <span>A7</span>
+        </div>
+
+        <div class="scan-message" id="scan-message">
+          <h3>SCANNER READY</h3>
+          <p>Locate and neutralize unstable energy signals.</p>
+
+          <button id="start-sector-scan" type="button">
+            INITIALIZE SCAN
+          </button>
+        </div>
+      </div>
+
+      <p class="scan-instructions">
+        Click the glowing anomalies before they disappear.
+      </p>
+
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
