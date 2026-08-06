@@ -945,3 +945,522 @@ body {
   }
   /* Trigger Pages rebuild */
 }
+
+/* =========================================================
+   NEON SECTOR SCAN MINI-GAME
+   ========================================================= */
+
+.scan-button {
+  border: 1px solid rgba(181, 113, 255, 0.65);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(118, 63, 190, 0.2),
+      rgba(0, 229, 255, 0.05)
+    );
+  color: #d9b8ff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.scan-button:hover {
+  color: #ffffff;
+  border-color: #b571ff;
+  box-shadow:
+    0 0 18px rgba(181, 113, 255, 0.28),
+    inset 0 0 18px rgba(181, 113, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.sector-scan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(20, 24, 70, 0.72),
+      rgba(0, 3, 10, 0.96)
+    );
+
+  backdrop-filter: blur(13px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 250ms ease,
+    visibility 250ms ease;
+}
+
+.sector-scan-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.sector-scan-window {
+  position: relative;
+  width: min(920px, 100%);
+  overflow: hidden;
+
+  border: 1px solid rgba(0, 229, 255, 0.45);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(5, 12, 31, 0.98),
+      rgba(4, 7, 21, 0.96)
+    );
+
+  box-shadow:
+    0 0 80px rgba(0, 229, 255, 0.15),
+    0 0 130px rgba(117, 65, 255, 0.12),
+    inset 0 0 60px rgba(0, 229, 255, 0.035);
+
+  clip-path: polygon(
+    24px 0,
+    100% 0,
+    100% calc(100% - 24px),
+    calc(100% - 24px) 100%,
+    0 100%,
+    0 24px
+  );
+}
+
+.sector-scan-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 3px,
+      rgba(255, 255, 255, 0.018) 4px
+    );
+
+  z-index: 10;
+}
+
+.scan-window-header {
+  position: relative;
+  z-index: 11;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+
+  padding: 22px 26px;
+
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.scan-window-header h2 {
+  margin: 5px 0 0;
+  color: #effcff;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  letter-spacing: 0.16em;
+}
+
+.scan-eyebrow {
+  margin: 0;
+  color: #00e5ff;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+}
+
+.scan-close-button {
+  width: 42px;
+  height: 42px;
+
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.04);
+  color: #7befff;
+
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+
+  transition: 180ms ease;
+}
+
+.scan-close-button:hover {
+  color: #ffffff;
+  border-color: #00e5ff;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.25);
+}
+
+.scan-status-bar {
+  position: relative;
+  z-index: 11;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  border-bottom: 1px solid rgba(0, 229, 255, 0.14);
+}
+
+.scan-status-bar div {
+  padding: 13px 20px;
+
+  color: #607f92;
+  font-family: monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.17em;
+}
+
+.scan-status-bar div:not(:last-child) {
+  border-right: 1px solid rgba(0, 229, 255, 0.12);
+}
+
+.scan-status-bar strong {
+  float: right;
+  color: #00e5ff;
+}
+
+.scan-field {
+  position: relative;
+  height: min(56vh, 520px);
+  min-height: 390px;
+  overflow: hidden;
+  cursor: crosshair;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(0, 229, 255, 0.09),
+      rgba(4, 8, 24, 0.97) 55%,
+      #02050d 100%
+    );
+}
+
+.radar-grid {
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.055) 1px, transparent 1px);
+
+  background-size: 42px 42px;
+
+  mask-image: radial-gradient(
+    circle at center,
+    black,
+    transparent 72%
+  );
+}
+
+.radar-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(0, 229, 255, 0.16);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radar-circle-one {
+  width: 170px;
+  height: 170px;
+}
+
+.radar-circle-two {
+  width: 330px;
+  height: 330px;
+}
+
+.radar-circle-three {
+  width: 500px;
+  height: 500px;
+}
+
+.radar-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: rgba(0, 229, 255, 0.12);
+  transform: translate(-50%, -50%);
+}
+
+.radar-crosshair-horizontal {
+  width: 76%;
+  height: 1px;
+}
+
+.radar-crosshair-vertical {
+  width: 1px;
+  height: 76%;
+}
+
+.radar-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 43%;
+  height: 43%;
+
+  transform-origin: left top;
+
+  background: conic-gradient(
+    from 270deg,
+    rgba(0, 229, 255, 0.34),
+    rgba(0, 229, 255, 0.06) 35deg,
+    transparent 70deg
+  );
+
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  animation: radarRotation 3.2s linear infinite;
+}
+
+@keyframes radarRotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scanner-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  display: grid;
+  place-items: center;
+
+  width: 82px;
+  height: 82px;
+
+  border: 1px solid rgba(0, 229, 255, 0.55);
+  border-radius: 50%;
+
+  background: rgba(3, 13, 31, 0.88);
+
+  box-shadow:
+    0 0 28px rgba(0, 229, 255, 0.22),
+    inset 0 0 24px rgba(0, 229, 255, 0.08);
+
+  transform: translate(-50%, -50%);
+}
+
+.scanner-center span {
+  color: #00e5ff;
+  font-family: monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.9);
+}
+
+.scan-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  z-index: 20;
+
+  width: min(390px, calc(100% - 40px));
+  padding: 28px;
+
+  border: 1px solid rgba(181, 113, 255, 0.42);
+  background: rgba(4, 8, 24, 0.94);
+
+  text-align: center;
+
+  box-shadow:
+    0 0 45px rgba(181, 113, 255, 0.17),
+    inset 0 0 30px rgba(0, 229, 255, 0.035);
+
+  transform: translate(-50%, -50%);
+}
+
+.scan-message.is-hidden {
+  display: none;
+}
+
+.scan-message h3 {
+  margin: 0 0 10px;
+  color: #d3a8ff;
+  letter-spacing: 0.14em;
+}
+
+.scan-message p {
+  margin: 0 0 20px;
+  color: #9eb6c3;
+  line-height: 1.6;
+}
+
+.scan-message button {
+  padding: 13px 20px;
+
+  border: 1px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+  color: #baf8ff;
+
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  cursor: pointer;
+
+  transition: 180ms ease;
+}
+
+.scan-message button:hover {
+  background: rgba(0, 229, 255, 0.18);
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.25);
+}
+
+.scan-anomaly {
+  position: absolute;
+  z-index: 16;
+
+  width: 34px;
+  height: 34px;
+
+  border: 2px solid #ff55e6;
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      #ffffff 0 8%,
+      #ff55e6 9% 24%,
+      rgba(255, 85, 230, 0.16) 25% 58%,
+      transparent 60%
+    );
+
+  box-shadow:
+    0 0 12px #ff55e6,
+    0 0 30px rgba(255, 85, 230, 0.75);
+
+  cursor: pointer;
+
+  animation:
+    anomalyPulse 650ms ease-in-out infinite alternate,
+    anomalyAppear 160ms ease-out;
+}
+
+.scan-anomaly::before,
+.scan-anomaly::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
+
+  border: 1px solid rgba(255, 85, 230, 0.52);
+  border-radius: 50%;
+}
+
+.scan-anomaly::after {
+  inset: -17px;
+  border-style: dashed;
+  animation: anomalySpin 2s linear infinite;
+}
+
+.scan-anomaly:hover {
+  transform: scale(1.15);
+}
+
+@keyframes anomalyPulse {
+  from {
+    filter: brightness(0.9);
+  }
+
+  to {
+    filter: brightness(1.6);
+  }
+}
+
+@keyframes anomalyAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes anomalySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scan-hit {
+  position: absolute;
+  z-index: 18;
+
+  color: #00ffcc;
+  font-family: monospace;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+
+  animation: hitFloat 700ms ease-out forwards;
+}
+
+@keyframes hitFloat {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-35px) scale(1.2);
+  }
+}
+
+.scan-instructions {
+  position: relative;
+  z-index: 11;
+
+  margin: 0;
+  padding: 13px 20px;
+
+  border-top: 1px solid rgba(0, 229, 255, 0.13);
+
+  color: #658092;
+  font-family: monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+
+body.scan-game-open {
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .scan-status-bar div {
+    padding: 11px 10px;
+    font-size: 0.57rem;
+  }
+
+  .scan-status-bar strong {
+    display: block;
+    float: none;
+    margin-top: 6px;
+  }
+
+  .scan-field {
+    min-height: 380px;
+  }
+
+  .radar-circle-three {
+    width: 410px;
+    height: 410px;
+  }
+}
