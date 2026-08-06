@@ -1,307 +1,770 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="sector">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta
     name="description"
-    content="Adam's interactive Neon Sector-7 developer portfolio featuring game development, artificial intelligence, Minecraft, Three.js, and creative technology."
+    content="Explore Adam's Neon Sector-7: an interactive developer portfolio spanning creative web worlds, Java and Paper game systems, and local AI experiments."
   >
+  <meta name="theme-color" content="#040711" id="theme-color-meta">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Adam">
 
-  <meta name="theme-color" content="#02050c">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Neon Sector-7">
+  <meta property="og:title" content="Adam — Creative Developer | Neon Sector-7">
+  <meta
+    property="og:description"
+    content="Games, AI, cinematic interfaces, and creative systems—built inside Neon Sector-7."
+  >
+  <meta property="og:url" content="https://doctordoomies.github.io/">
+  <meta property="og:image" content="https://doctordoomies.github.io/assets/banner.jpg">
+  <meta property="og:image:alt" content="Adam's Neon Sector-7 developer portfolio banner">
+  <meta name="twitter:card" content="summary_large_image">
 
-  <title>Adam | Neon Sector-7</title>
+  <title>Adam — Creative Developer | Neon Sector-7</title>
 
+  <link rel="canonical" href="https://doctordoomies.github.io/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/neon-city-background.jpg" as="image" type="image/jpeg" fetchpriority="high">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "Adam",
+      "url": "https://doctordoomies.github.io/",
+      "sameAs": ["https://github.com/doctordoomies"],
+      "knowsAbout": [
+        "Creative web development",
+        "Game development",
+        "Java",
+        "Paper",
+        "Three.js",
+        "Local artificial intelligence"
+      ]
+    }
+  </script>
+
+  <script>
+    document.documentElement.classList.add("js");
+    try {
+      const savedTheme = localStorage.getItem("ns7-theme");
+      if (["sector", "solar", "ghost"].includes(savedTheme)) {
+        document.documentElement.dataset.theme = savedTheme;
+      }
+    } catch (error) {
+      // The default interface theme remains available when storage is blocked.
+    }
+  </script>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
   <div class="site-background" aria-hidden="true">
+    <div class="ambient-light ambient-light-one"></div>
+    <div class="ambient-light ambient-light-two"></div>
     <div class="grid-layer"></div>
     <div class="particles" id="particles"></div>
     <div class="scanlines"></div>
+    <div class="noise-layer"></div>
   </div>
 
-  <div
-    class="boot-screen"
-    id="boot-screen"
-    role="status"
-    aria-live="polite"
-  >
-    <div class="boot-panel">
-      <div class="boot-header">
-        <p class="boot-title">
-          NEON SECTOR-7 // BOOT SEQUENCE
-        </p>
+  <div class="pointer-aura" id="pointer-aura" aria-hidden="true"></div>
+  <div class="page-progress" aria-hidden="true">
+    <span id="page-progress-bar"></span>
+  </div>
 
-        <span class="boot-light" aria-hidden="true"></span>
+  <div class="boot-screen" id="boot-screen" aria-label="Neon Sector-7 intro">
+    <div class="boot-panel">
+      <div class="boot-topline">
+        <p>NEON SECTOR-7 // HANDSHAKE</p>
+        <span class="status-light"></span>
       </div>
 
-      <pre class="boot-log" id="boot-log"></pre>
+      <div class="boot-mark" aria-hidden="true">
+        <span>A7</span>
+      </div>
+
+      <pre class="boot-log" id="boot-log" aria-hidden="true"></pre>
+      <p class="sr-only" id="boot-announcement" aria-live="polite"></p>
 
       <div
         class="boot-progress"
-        aria-label="Portfolio loading progress"
+        role="progressbar"
+        aria-label="Intro progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        id="boot-progress"
       >
-        <div
-          class="boot-progress-bar"
-          id="boot-progress-bar"
-        ></div>
+        <span id="boot-progress-bar"></span>
       </div>
+
+      <button class="text-button boot-skip" id="boot-skip" type="button">
+        Skip intro
+      </button>
     </div>
   </div>
 
-  <header class="site-header">
-    <nav class="navigation" aria-label="Primary navigation">
-      <a class="logo" href="#home">
-        NS-7 // <span>ADAM</span>
+  <p class="interface-toast" id="interface-toast" role="status" aria-live="polite"></p>
+
+  <header class="site-header" id="site-header">
+    <nav class="navigation page-shell" aria-label="Primary navigation">
+      <a class="logo" href="#home" aria-label="Neon Sector-7 home">
+        <span class="logo-symbol" aria-hidden="true">A7</span>
+        <span class="logo-copy">
+          <strong>NEON SECTOR-7</strong>
+          <small>ADAM // CREATIVE DEV</small>
+        </span>
       </a>
 
-      <div class="nav-links">
-        <a href="#home">HOME</a>
-        <a href="#overview">MODULES</a>
-        <a
-          href="https://github.com/doctordoomies"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          GITHUB
-        </a>
-      </div>
-    </nav>
-  </header>
+      <button
+        class="nav-toggle"
+        id="nav-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="nav-panel"
+        aria-label="Open navigation"
+      >
+        <span></span>
+        <span></span>
+      </button>
 
-  <main>
-    <section class="hero" id="home">
-      <div class="hero-inner page-shell">
-        <div class="hero-copy">
-        <p class="eyebrow">
-          System profile online
-        </p>
+      <div class="nav-panel" id="nav-panel">
+        <div class="nav-links">
+          <a href="#work" data-nav-link>Work</a>
+          <a href="#about" data-nav-link>About</a>
+          <a href="#lab" data-nav-link>Lab</a>
+          <a href="#contact" data-nav-link>Contact</a>
+        </div>
 
-        <h1>ADAM</h1>
+        <div class="nav-tools">
+          <button
+            class="theme-switcher"
+            id="theme-switcher"
+            type="button"
+            aria-label="Change interface palette"
+            title="Change interface palette"
+          >
+            <span></span><span></span><span></span>
+          </button>
 
-        <p class="hero-subtitle">
-          AI • Game Development • Minecraft • Three.js
-        </p>
-
-        <p class="hero-description">
-          Welcome to Neon Sector-7—an interactive developer
-          portfolio built around ambitious games, artificial
-          intelligence, 3D environments, Minecraft systems,
-          cinematic interfaces, and everything I create next.
-        </p>
-
-        <div class="hero-actions">
-          <a class="button button-primary" href="#overview">
-            <span class="button-icon">▶</span>
-            Enter Sector
-          </a>
+          <button
+            class="command-trigger"
+            id="command-trigger"
+            type="button"
+            aria-label="Open command deck"
+          >
+            Command <kbd>Ctrl K</kbd>
+          </button>
 
           <a
-            class="button"
+            class="nav-github"
             href="https://github.com/doctordoomies"
             target="_blank"
             rel="noopener noreferrer"
           >
-            <span class="button-icon">&lt;/&gt;</span>
-            Open GitHub
+            GitHub <span aria-hidden="true">↗</span>
+            <span class="sr-only">(opens in a new tab)</span>
           </a>
+        </div>
+      </div>
+    </nav>
+  </header>
 
-          <button class="hero-button scan-button" id="open-sector-scan" type="button">
-            <span class="button-icon">◎</span>
-              RUN SECTOR SCAN
+  <main id="main-content" tabindex="-1">
+    <section class="hero" id="home" aria-labelledby="hero-title">
+      <div class="hero-city" aria-hidden="true"></div>
+      <div class="hero-vignette" aria-hidden="true"></div>
+      <span class="hero-coordinate coordinate-one" aria-hidden="true">40.7128° N // 74.0060° W</span>
+      <span class="hero-coordinate coordinate-two" aria-hidden="true">SIGNAL // A7-2026</span>
+      <span class="hero-watermark" aria-hidden="true">SECTOR-7</span>
+
+      <div class="hero-layout page-shell">
+        <div class="hero-copy reveal">
+          <p class="eyebrow"><span></span> Identity online // Adam</p>
+
+          <h1 id="hero-title">
+            <span class="hero-intro">I build</span>
+            <span>digital worlds</span>
+            <span class="gradient-text">with a pulse.</span>
+          </h1>
+
+          <p class="hero-description">
+            I'm Adam, a creative developer exploring the space between games,
+            AI, and cinematic web experiences—from interactive worlds and
+            Minecraft systems to local AI workflows.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button button-primary" href="#work">
+              <span>Explore the builds</span>
+              <span class="button-arrow" aria-hidden="true">↘</span>
+            </a>
+
+            <a
+              class="button button-secondary"
+              href="https://github.com/doctordoomies/doctordoomies.github.io"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Inspect the source</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+              <span class="sr-only">(opens in a new tab)</span>
+            </a>
+          </div>
+
+          <ul class="hero-signals" aria-label="Creative focus">
+            <li><span>01</span> Creative systems</li>
+            <li><span>02</span> Playable ideas</li>
+            <li><span>03</span> Always evolving</li>
+          </ul>
+        </div>
+
+        <aside class="identity-console reveal" aria-label="Adam's live creator signal">
+          <div class="panel-chrome">
+            <span>CREATOR_SIGNAL</span>
+            <span class="panel-status"><i></i> LIVE</span>
+          </div>
+
+          <div class="core-stage" id="core-stage" aria-hidden="true">
+            <div class="core-orbit core-orbit-one"><i></i></div>
+            <div class="core-orbit core-orbit-two"><i></i></div>
+            <div class="core-orbit core-orbit-three"></div>
+            <div class="core-crosshair core-crosshair-x"></div>
+            <div class="core-crosshair core-crosshair-y"></div>
+            <div class="identity-core">
+              <span>A7</span>
+              <small>ONLINE</small>
+            </div>
+            <span class="core-glyph glyph-one">AI</span>
+            <span class="core-glyph glyph-two">JS</span>
+            <span class="core-glyph glyph-three">JAVA</span>
+          </div>
+
+          <dl class="console-readout">
+            <div>
+              <dt>Operator</dt>
+              <dd>Adam</dd>
+            </div>
+            <div>
+              <dt>Focus</dt>
+              <dd id="focus-signal">Interactive worlds</dd>
+            </div>
+            <div>
+              <dt>Local time</dt>
+              <dd id="local-time">--:--:--</dd>
+            </div>
+          </dl>
+
+          <button class="console-action" type="button" data-open-scan>
+            <span class="console-action-icon" aria-hidden="true">◎</span>
+            Run anomaly scan
+            <span aria-hidden="true">→</span>
           </button>
-        </div>
-      </div>
-
-      <aside class="system-card" aria-label="Developer system status">
-        <p class="card-label">
-          IDENTITY_CORE // ACTIVE
-        </p>
-
-        <div class="identity-core" aria-hidden="true">
-          <span>A7</span>
-        </div>
-
-        <dl class="system-list">
-          <div class="system-row">
-            <dt>IDENTITY</dt>
-            <dd>Adam</dd>
-          </div>
-
-          <div class="system-row">
-            <dt>CLASS</dt>
-            <dd>Developer</dd>
-          </div>
-
-          <div class="system-row">
-            <dt>PRIMARY MISSION</dt>
-            <dd>Build the future</dd>
-          </div>
-
-          <div class="system-row">
-            <dt>FLAGSHIP PROJECT</dt>
-            <dd>Neon Sector-7</dd>
-          </div>
-
-          <div class="system-row">
-            <dt>SYSTEM STATUS</dt>
-            <dd class="online">● ONLINE</dd>
-          </div>
-        </dl>
-        
         </aside>
-        
       </div>
-      
+
+      <a class="scroll-cue" href="#signal-strip">
+        <span>Scroll to enter</span>
+        <i aria-hidden="true"></i>
+      </a>
     </section>
 
-    <section class="overview page-shell" id="overview">
-      <div class="section-heading">
-        <p class="section-code">
-          &gt; ACCESSING CORE MODULES
-        </p>
-
-        <h2>What I Build</h2>
-
-        <p>
-          My projects combine programming, visual design,
-          experimentation, storytelling, and the challenge of
-          turning ambitious ideas into complete experiences.
-        </p>
+    <div class="signal-strip" id="signal-strip" aria-label="Adam's creative disciplines">
+      <div class="signal-track">
+        <span>Creative web</span><i>✦</i>
+        <span>Game development</span><i>✦</i>
+        <span>Java + Paper</span><i>✦</i>
+        <span>Local AI</span><i>✦</i>
+        <span>Three.js worlds</span><i>✦</i>
+        <span>Visual systems</span><i>✦</i>
+        <span aria-hidden="true">Creative web</span><i aria-hidden="true">✦</i>
+        <span aria-hidden="true">Game development</span><i aria-hidden="true">✦</i>
+        <span aria-hidden="true">Java + Paper</span><i aria-hidden="true">✦</i>
+        <span aria-hidden="true">Local AI</span><i aria-hidden="true">✦</i>
+        <span aria-hidden="true">Three.js worlds</span><i aria-hidden="true">✦</i>
+        <span aria-hidden="true">Visual systems</span><i aria-hidden="true">✦</i>
       </div>
+    </div>
 
-      <div class="module-grid">
-        <article class="module-card">
-          <span class="module-number">
-            MODULE_01
-          </span>
-
-          <h3>🌌 Neon Sector-7</h3>
-
+    <section class="section work-section" id="work" aria-labelledby="work-title">
+      <div class="page-shell">
+        <header class="section-heading reveal">
+          <div>
+            <p class="section-code">TRANSMISSION_01 // SELECTED WORK</p>
+            <h2 id="work-title">Ideas under construction.</h2>
+          </div>
           <p>
-            An interactive Three.js portfolio world where visitors
-            explore the different stages of my development journey
-            through environments, characters, and cinematic moments.
+            Experiments, worlds, and systems in different stages of becoming.
+            Every build is a chance to learn something difficult and make it feel alive.
           </p>
+        </header>
 
-          <span class="module-status">
-            ● IN DEVELOPMENT
-          </span>
-        </article>
+        <div class="project-grid">
+          <article class="project-card project-featured reveal" data-tilt>
+            <div class="project-visual project-city-visual">
+              <div class="project-scanline" aria-hidden="true"></div>
+              <span class="visual-coordinate">VIEWPORT // NS7-001</span>
+              <span class="project-status status-live"><i></i> In development</span>
+              <div class="visual-lockup">
+                <span>NEON</span>
+                <strong>SECTOR-7</strong>
+              </div>
+            </div>
 
-        <article class="module-card">
-          <span class="module-number">
-            MODULE_02
-          </span>
+            <div class="project-content">
+              <p class="project-index">CASE_FILE_001 // FLAGSHIP BUILD</p>
+              <h3>Neon Sector-7</h3>
+              <p>
+                An evolving interactive portfolio world designed as a place to
+                explore—not just a page to scroll. Cinematic interfaces and
+                playful systems chart the journey as the project grows.
+              </p>
 
-          <h3>⛏️ Minecraft Systems</h3>
+              <ul class="tag-list" aria-label="Technologies and disciplines">
+                <li>Interactive web</li>
+                <li>World building</li>
+                <li>JavaScript</li>
+              </ul>
 
+              <div class="project-links">
+                <a
+                  href="https://github.com/doctordoomies/doctordoomies.github.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View source <span aria-hidden="true">↗</span>
+                  <span class="sr-only">(opens in a new tab)</span>
+                </a>
+                <button type="button" data-open-scan>
+                  Play scanner <span aria-hidden="true">◎</span>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <article class="project-card project-game reveal" data-tilt>
+            <div class="project-visual pixel-visual" aria-hidden="true">
+              <span class="pixel-moon"></span>
+              <span class="pixel-star star-one"></span>
+              <span class="pixel-star star-two"></span>
+              <span class="pixel-star star-three"></span>
+              <span class="pixel-platform platform-one"></span>
+              <span class="pixel-platform platform-two"></span>
+              <span class="pixel-character"><i></i></span>
+              <span class="visual-coordinate">BUILD // HTML-2D</span>
+            </div>
+
+            <div class="project-content">
+              <p class="project-index">CASE_FILE_002 // GAME CHALLENGE</p>
+              <h3>2D Game Challenge</h3>
+              <p>
+                A friendly challenge to build a 2D game from scratch in HTML
+                using IntelliJ IDEA and a local Qwen3 Coder model through Ollama.
+              </p>
+
+              <ul class="tag-list" aria-label="Technologies">
+                <li>HTML</li>
+                <li>Game dev</li>
+                <li>Local AI</li>
+              </ul>
+
+              <div class="project-links">
+                <a
+                  href="https://github.com/doctordoomies/2D-Game-Challenge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Explore repository <span aria-hidden="true">↗</span>
+                  <span class="sr-only">(opens in a new tab)</span>
+                </a>
+              </div>
+            </div>
+          </article>
+
+          <article class="project-card project-system reveal" data-tilt>
+            <div class="project-visual voxel-visual" aria-hidden="true">
+              <div class="voxel-stack voxel-stack-one"><i></i><b></b><span></span></div>
+              <div class="voxel-stack voxel-stack-two"><i></i><b></b><span></span></div>
+              <div class="voxel-stack voxel-stack-three"><i></i><b></b><span></span></div>
+              <span class="visual-coordinate">SYSTEM // PAPER-JAVA</span>
+            </div>
+
+            <div class="project-content">
+              <p class="project-index">FIELD_NOTE_003 // ACTIVE SYSTEMS</p>
+              <h3>Minecraft Engineering</h3>
+              <p>
+                Java and Paper-powered server systems: custom minigames,
+                abilities, multiplayer mechanics, scoreboards, commands,
+                databases, and the architecture connecting them.
+              </p>
+
+              <ul class="tag-list" aria-label="Technologies">
+                <li>Java</li>
+                <li>Paper</li>
+                <li>Systems</li>
+              </ul>
+
+              <span class="project-note">Build logs will transmit when ready.</span>
+            </div>
+          </article>
+
+          <article class="project-card project-ai reveal" data-tilt>
+            <div class="project-visual ai-visual" aria-hidden="true">
+              <span class="ai-node node-one"></span>
+              <span class="ai-node node-two"></span>
+              <span class="ai-node node-three"></span>
+              <span class="ai-node node-four"></span>
+              <span class="ai-line line-one"></span>
+              <span class="ai-line line-two"></span>
+              <span class="ai-line line-three"></span>
+              <div class="ai-core">LOCAL<br>AI</div>
+              <span class="visual-coordinate">LAB // OFFLINE-FIRST</span>
+            </div>
+
+            <div class="project-content">
+              <p class="project-index">FIELD_NOTE_004 // EXPERIMENTAL</p>
+              <h3>Local AI Lab</h3>
+              <p>
+                An offline-first test bench for local language models, coding
+                assistants, image generation, LoRAs, and creative development
+                workflows.
+              </p>
+
+              <ul class="tag-list" aria-label="Tools and disciplines">
+                <li>Ollama</li>
+                <li>Image generation</li>
+                <li>Workflows</li>
+              </ul>
+
+              <a class="project-note project-note-link" href="#lab">Open the lab terminal →</a>
+            </div>
+          </article>
+        </div>
+
+        <div class="section-tail reveal">
+          <span>MORE TRANSMISSIONS INCOMING</span>
+          <a
+            href="https://github.com/doctordoomies?tab=repositories"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            See everything on GitHub <span aria-hidden="true">↗</span>
+            <span class="sr-only">(opens in a new tab)</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section about-section" id="about" aria-labelledby="about-title">
+      <div class="page-shell">
+        <div class="about-layout">
+          <div class="about-copy reveal">
+            <p class="section-code">TRANSMISSION_02 // OPERATOR PROFILE</p>
+            <h2 id="about-title">Code is only half the experience.</h2>
+            <p class="about-lede">
+              I build at the intersection of programming, visual design,
+              experimentation, and storytelling.
+            </p>
+            <p>
+              The goal is to turn ambitious ideas into complete experiences—systems
+              that work, worlds that invite exploration, and interfaces with a point
+              of view. Neon Sector-7 is the place where those interests meet.
+            </p>
+          </div>
+
+          <div class="principle-list reveal">
+            <article>
+              <span>01</span>
+              <div>
+                <h3>Learn by building</h3>
+                <p>The fastest route from curiosity to understanding is a working prototype.</p>
+              </div>
+            </article>
+            <article>
+              <span>02</span>
+              <div>
+                <h3>Make it immersive</h3>
+                <p>Small details, motion, and atmosphere can turn a tool into an experience.</p>
+              </div>
+            </article>
+            <article>
+              <span>03</span>
+              <div>
+                <h3>Keep experimenting</h3>
+                <p>New tools are invitations to test ideas, break assumptions, and iterate.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <figure class="identity-banner reveal">
+          <div class="banner-frame">
+            <img
+              src="assets/banner.jpg"
+              alt="Adam in the Neon Sector-7 world, coding beside a friendly robot interface"
+              width="2172"
+              height="724"
+              loading="lazy"
+              decoding="async"
+            >
+            <span class="banner-shine" aria-hidden="true"></span>
+          </div>
+          <figcaption>
+            <span>WORLD_FILE // NEON-SECTOR-7</span>
+            <span>Learn. Build. Experiment. Repeat.</span>
+          </figcaption>
+        </figure>
+
+        <div class="capability-panel reveal">
+          <div class="capability-intro">
+            <p class="section-code">CAPABILITY_MATRIX</p>
+            <h3>Creative territory</h3>
+            <p>
+              A growing toolkit for taking an idea from a rough signal to a world
+              someone else can enter.
+            </p>
+          </div>
+
+          <ul class="capability-grid">
+            <li><span>01</span><strong>Creative web</strong><small>HTML · CSS · JavaScript</small></li>
+            <li><span>02</span><strong>Interactive worlds</strong><small>Three.js · visual systems</small></li>
+            <li><span>03</span><strong>Game systems</strong><small>Mechanics · multiplayer</small></li>
+            <li><span>04</span><strong>Minecraft</strong><small>Java · Paper · databases</small></li>
+            <li><span>05</span><strong>Local AI</strong><small>Models · LoRAs · assistants</small></li>
+            <li><span>06</span><strong>Experimentation</strong><small>Prototype · test · iterate</small></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section lab-section" id="lab" aria-labelledby="lab-title">
+      <div class="page-shell">
+        <header class="section-heading reveal">
+          <div>
+            <p class="section-code">TRANSMISSION_03 // INTERACTIVE LAB</p>
+            <h2 id="lab-title">Ask the system.</h2>
+          </div>
           <p>
-            Custom Java and Paper plugins featuring minigames,
-            abilities, multiplayer mechanics, scoreboards,
-            databases, commands, and server-side architecture.
+            The terminal is live. Try a command, inspect the mission, or launch
+            the anomaly scanner from the command line.
           </p>
+        </header>
 
-          <span class="module-status">
-            ● ACTIVE
-          </span>
-        </article>
+        <div class="lab-layout">
+          <div class="terminal reveal" aria-label="Interactive profile terminal">
+            <div class="terminal-bar">
+              <div aria-hidden="true"><span></span><span></span><span></span></div>
+              <p>adam@neon-sector-7:~</p>
+              <small>ENCRYPTED</small>
+            </div>
 
-        <article class="module-card">
-          <span class="module-number">
-            MODULE_03
-          </span>
+            <div class="terminal-output" id="terminal-output" aria-live="polite">
+              <div class="terminal-line system-line">NEON SECTOR-7 command interface connected.</div>
+              <div class="terminal-line system-line">Type <strong>help</strong> to inspect available commands.</div>
+            </div>
 
-          <h3>🤖 Local AI Lab</h3>
+            <form class="terminal-form" id="terminal-form">
+              <label class="sr-only" for="terminal-input">Enter a terminal command</label>
+              <span aria-hidden="true">visitor@ns7:~$</span>
+              <input
+                id="terminal-input"
+                name="command"
+                type="text"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="type a command..."
+              >
+            </form>
 
-          <p>
-            Experiments with local language models, coding
-            assistants, image generation, LoRAs, and offline
-            development workflows powered by creative AI tools.
-          </p>
+            <div class="terminal-shortcuts" aria-label="Suggested terminal commands">
+              <span>Try:</span>
+              <button type="button" data-terminal-command="whoami">whoami</button>
+              <button type="button" data-terminal-command="projects">projects</button>
+              <button type="button" data-terminal-command="stack">stack</button>
+              <button type="button" data-terminal-command="scan">scan</button>
+            </div>
+          </div>
 
-          <span class="module-status">
-            ● EXPERIMENTING
-          </span>
-        </article>
+          <aside class="build-path reveal" aria-label="Adam's build philosophy">
+            <div class="panel-chrome">
+              <span>BUILD_PROTOCOL</span>
+              <span>04 STAGES</span>
+            </div>
+
+            <ol>
+              <li>
+                <span>01</span>
+                <div><strong>Imagine</strong><small>Find the idea worth chasing.</small></div>
+              </li>
+              <li>
+                <span>02</span>
+                <div><strong>Prototype</strong><small>Make the idea tangible early.</small></div>
+              </li>
+              <li>
+                <span>03</span>
+                <div><strong>Engineer</strong><small>Build the systems underneath.</small></div>
+              </li>
+              <li>
+                <span>04</span>
+                <div><strong>Polish</strong><small>Give every detail a purpose.</small></div>
+              </li>
+            </ol>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section contact-section" id="contact" aria-labelledby="contact-title">
+      <div class="page-shell">
+        <div class="contact-panel reveal">
+          <div class="contact-orbit" aria-hidden="true"><span></span><i></i></div>
+          <div class="contact-copy">
+            <p class="section-code">FINAL_TRANSMISSION // CHANNEL OPEN</p>
+            <h2 id="contact-title">Follow the signal.</h2>
+            <p>
+              Find the source code, experiments, and build history on GitHub.
+              Neon Sector-7 will keep evolving as new ideas come online.
+            </p>
+
+            <div class="contact-actions">
+              <a
+                class="button button-primary"
+                href="https://github.com/doctordoomies"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>Open @doctordoomies</span>
+                <span class="button-arrow" aria-hidden="true">↗</span>
+                <span class="sr-only">(opens in a new tab)</span>
+              </a>
+              <button class="button button-secondary" id="copy-username" type="button">
+                <span>Copy GitHub handle</span>
+                <span class="button-arrow" aria-hidden="true">＋</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="contact-readout" aria-hidden="true">
+            <span>CONNECTION</span>
+            <strong>READY</strong>
+            <i></i>
+            <small>AWAITING NEXT MISSION</small>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <div class="sector-scan-overlay" id="sector-scan-overlay" aria-hidden="true">
-  <div class="sector-scan-window">
-
-    <div class="scan-window-header">
+  <footer class="site-footer">
+    <div class="page-shell">
+      <p>Designed and built by Adam <span>//</span> Neon Sector-7.</p>
       <div>
-        <p class="scan-eyebrow">NEON SECTOR-7 SECURITY SYSTEM</p>
-        <h2>ANOMALY SCANNER</h2>
-      </div>
-
-      <button
-        class="scan-close-button"
-        id="close-sector-scan"
-        type="button"
-        aria-label="Close sector scanner"
-      >
-        ×
-      </button>
-    </div>
-
-    <div class="scan-status-bar">
-      <div>
-        SCORE
-        <strong id="scan-score">000</strong>
-      </div>
-
-      <div>
-        TIME
-        <strong id="scan-time">20</strong>
-      </div>
-
-      <div>
-        STATUS
-        <strong id="scan-status">STANDBY</strong>
+        <span>© <span id="current-year">2026</span></span>
+        <a href="#home">Return to top ↑</a>
       </div>
     </div>
+  </footer>
 
-      <div class="scan-field" id="scan-field">
-        <div class="radar-grid"></div>
-        <div class="radar-circle radar-circle-one"></div>
-        <div class="radar-circle radar-circle-two"></div>
-        <div class="radar-circle radar-circle-three"></div>
-
-        <div class="radar-crosshair radar-crosshair-horizontal"></div>
-        <div class="radar-crosshair radar-crosshair-vertical"></div>
-
-        <div class="radar-sweep"></div>
-
-        <div class="scanner-center">
-          <span>A7</span>
+  <dialog class="command-dialog" id="command-dialog" aria-labelledby="command-title">
+    <div class="command-window">
+      <div class="command-header">
+        <div>
+          <p>QUICK_ACCESS // COMMAND DECK</p>
+          <h2 id="command-title">Where to?</h2>
         </div>
+        <button class="icon-button" id="close-command" type="button" aria-label="Close command deck">×</button>
+      </div>
+
+      <label class="command-search">
+        <span aria-hidden="true">⌕</span>
+        <span class="sr-only">Filter commands</span>
+        <input id="command-search-input" type="search" placeholder="Type a command or destination..." autocomplete="off">
+        <kbd>ESC</kbd>
+      </label>
+
+      <div class="command-list" id="command-list">
+        <button type="button" data-command-target="#work" data-command-keywords="work projects builds portfolio">
+          <span>01</span><strong>Explore work</strong><small>Jump to selected builds</small><i>↘</i>
+        </button>
+        <button type="button" data-command-target="#about" data-command-keywords="about profile adam biography">
+          <span>02</span><strong>Open profile</strong><small>Read the operator dossier</small><i>↘</i>
+        </button>
+        <button type="button" data-command-target="#lab" data-command-keywords="lab terminal commands ai">
+          <span>03</span><strong>Enter the lab</strong><small>Use the interactive terminal</small><i>↘</i>
+        </button>
+        <button type="button" data-command-scan data-command-keywords="scan game anomaly play">
+          <span>04</span><strong>Run scanner</strong><small>Launch the anomaly mini-game</small><i>◎</i>
+        </button>
+        <a
+          href="https://github.com/doctordoomies"
+          target="_blank"
+          rel="noopener noreferrer"
+          data-command-keywords="github code repositories source"
+        >
+          <span>05</span><strong>Open GitHub</strong><small>View code and repositories</small><i>↗</i>
+        </a>
+      </div>
+
+      <p class="command-empty" id="command-empty" hidden>No matching signal found.</p>
+      <div class="command-footer"><span>↑↓ Navigate</span><span>Enter Select</span><span>Esc Close</span></div>
+    </div>
+  </dialog>
+
+  <dialog class="sector-scan-dialog" id="sector-scan-dialog" aria-labelledby="scan-dialog-title" aria-describedby="scan-instructions">
+    <div class="sector-scan-window">
+      <div class="scan-window-header">
+        <div>
+          <p class="scan-eyebrow">NEON SECTOR-7 // SECURITY SYSTEM</p>
+          <h2 id="scan-dialog-title">Anomaly Scanner</h2>
+        </div>
+        <button class="icon-button scan-close-button" id="close-sector-scan" type="button" aria-label="Close anomaly scanner">×</button>
+      </div>
+
+      <div class="scan-status-bar">
+        <div><span>Score</span><strong id="scan-score">000</strong></div>
+        <div><span>Time</span><strong id="scan-time">20</strong></div>
+        <div><span>High signal</span><strong id="scan-high-score">000</strong></div>
+        <div><span>Status</span><strong id="scan-status">Standby</strong></div>
+      </div>
+
+      <div
+        class="scan-field"
+        id="scan-field"
+        tabindex="-1"
+        aria-label="Anomaly scan field. Click or tap anomalies, or press Space to neutralize the current signal."
+      >
+        <div class="radar-grid" aria-hidden="true"></div>
+        <div class="radar-circle radar-circle-one" aria-hidden="true"></div>
+        <div class="radar-circle radar-circle-two" aria-hidden="true"></div>
+        <div class="radar-circle radar-circle-three" aria-hidden="true"></div>
+        <div class="radar-crosshair radar-crosshair-horizontal" aria-hidden="true"></div>
+        <div class="radar-crosshair radar-crosshair-vertical" aria-hidden="true"></div>
+        <div class="radar-sweep" aria-hidden="true"></div>
+
+        <div class="scanner-center" aria-hidden="true"><span>A7</span></div>
 
         <div class="scan-message" id="scan-message">
-          <h3>SCANNER READY</h3>
-          <p>Locate and neutralize unstable energy signals.</p>
-
-          <button id="start-sector-scan" type="button">
-            INITIALIZE SCAN
-          </button>
+          <p class="scan-message-code">SYSTEM_READY</p>
+          <h3>Scanner ready</h3>
+          <p>Locate and neutralize unstable energy signals before time expires.</p>
+          <button id="start-sector-scan" type="button" data-scan-start>Initialize scan</button>
         </div>
       </div>
 
-      <p class="scan-instructions">
-        Click the glowing anomalies before they disappear.
+      <p class="scan-instructions" id="scan-instructions">
+        Click or tap the glowing signals. Keyboard operators can press Space.
       </p>
-
+      <p class="sr-only" id="scan-announcement" aria-live="polite"></p>
     </div>
-  </div>
+  </dialog>
 
   <script src="script.js"></script>
 </body>

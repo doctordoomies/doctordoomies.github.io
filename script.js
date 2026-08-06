@@ -1,377 +1,1125 @@
 "use strict";
 
-const bootScreen = document.querySelector("#boot-screen");
-const bootLog = document.querySelector("#boot-log");
-const bootProgress = document.querySelector("#boot-progress-bar");
-const particlesContainer = document.querySelector("#particles");
+const select = (selector, scope = document) => scope.querySelector(selector);
+const selectAll = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 
-const reduceMotion = window.matchMedia(
-  "(prefers-reduced-motion: reduce)"
-).matches;
+const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
 
-const bootSequence = [
-  "[ OK ] Connecting to Neon Sector-7 network...",
-  "[ OK ] Loading developer identity...",
-  "[ OK ] Initializing project directory...",
-  "[ OK ] Synchronizing AI modules...",
-  "[ OK ] Activating game-development systems...",
-  "[ OK ] Establishing Three.js rendering pipeline...",
-  "[READY] Portfolio interface online."
+function readStorage(storage, key, fallback = null) {
+  try {
+    return storage.getItem(key) ?? fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function writeStorage(storage, key, value) {
+  try {
+    storage.setItem(key, value);
+  } catch (error) {
+    // The interface remains fully usable when browser storage is unavailable.
+  }
+}
+
+const interfaceToast = select("#interface-toast");
+let toastTimer = null;
+
+function showToast(message) {
+  if (!interfaceToast) {
+    return;
+  }
+
+  window.clearTimeout(toastTimer);
+  interfaceToast.textContent = message;
+  interfaceToast.classList.add("is-visible");
+
+  toastTimer = window.setTimeout(() => {
+    interfaceToast.classList.remove("is-visible");
+  }, 2400);
+}
+
+/* ---------------------------------------------------------
+   Short, skippable, once-per-session intro
+   --------------------------------------------------------- */
+
+const bootScreen = select("#boot-screen");
+const bootLog = select("#boot-log");
+const bootProgress = select("#boot-progress");
+const bootProgressBar = select("#boot-progress-bar");
+const bootSkip = select("#boot-skip");
+const bootAnnouncement = select("#boot-announcement");
+
+const bootLines = [
+  "[ OK ] Identity signal found: ADAM",
+  "[ OK ] Linking creative systems",
+  "[ OK ] Mapping active build sectors",
+  "[ OK ] Calibrating interface atmosphere",
+  "[READY] Neon Sector-7 online"
 ];
 
-function finishBootSequence() {
+let bootFinished = false;
+let bootTimer = null;
+
+function setPageInert(isInert) {
+  [select("#site-header"), select("#main-content"), select(".site-footer")]
+    .filter(Boolean)
+    .forEach((element) => {
+      element.inert = isInert;
+    });
+}
+
+function finishBoot({ remember = true } = {}) {
+  if (bootFinished || !bootScreen) {
+    return;
+  }
+
+  bootFinished = true;
+  window.clearTimeout(bootTimer);
+
+  if (bootProgress && bootProgressBar) {
+    bootProgress.setAttribute("aria-valuenow", "100");
+    bootProgressBar.style.width = "100%";
+  }
+
+  if (bootAnnouncement) {
+    bootAnnouncement.textContent = "Neon Sector-7 interface ready.";
+  }
+
+  if (remember) {
+    writeStorage(sessionStorage, "ns7-intro-seen", "true");
+  }
+
+  document.body.classList.remove("booting");
   document.body.classList.add("interface-ready");
-  bootScreen.classList.add("boot-complete");
+  setPageInert(false);
+  bootScreen.classList.add("is-complete");
 
   window.setTimeout(() => {
-    bootScreen.setAttribute("aria-hidden", "true");
-  }, 850);
+    bootScreen.hidden = true;
+  }, reduceMotionQuery.matches ? 0 : 620);
 }
 
 function runBootSequence() {
-  if (reduceMotion) {
-    bootLog.textContent = bootSequence.join("\n");
-    bootProgress.style.width = "100%";
-    finishBootSequence();
+  if (!bootScreen || !bootLog || !bootProgress || !bootProgressBar) {
     return;
   }
+
+  const introSeen = readStorage(sessionStorage, "ns7-intro-seen") === "true";
+
+  if (reduceMotionQuery.matches || introSeen) {
+    bootScreen.hidden = true;
+    bootFinished = true;
+    document.body.classList.add("interface-ready");
+    return;
+  }
+
+  document.body.classList.add("booting");
+  setPageInert(true);
 
   let currentLine = 0;
 
-  function addNextLine() {
-    if (currentLine >= bootSequence.length) {
-      window.setTimeout(finishBootSequence, 450);
+  function revealLine() {
+    const line = bootLines[currentLine];
+    bootLog.textContent += `${currentLine ? "\n" : ""}${line}`;
+    currentLine += 1;
+
+    const percentage = Math.round((currentLine / bootLines.length) * 100);
+    bootProgress.setAttribute("aria-valuenow", String(percentage));
+    bootProgressBar.style.width = `${percentage}%`;
+
+    if (currentLine >= bootLines.length) {
+      bootTimer = window.setTimeout(finishBoot, 300);
       return;
     }
 
-    const nextLine = bootSequence[currentLine];
-
-    bootLog.textContent +=
-      `${currentLine === 0 ? "" : "\n"}${nextLine}`;
-
-    currentLine += 1;
-
-    const percentage =
-      (currentLine / bootSequence.length) * 100;
-
-    bootProgress.style.width = `${percentage}%`;
-
-    window.setTimeout(
-      addNextLine,
-      currentLine === bootSequence.length ? 520 : 310
-    );
+    bootTimer = window.setTimeout(revealLine, 210);
   }
 
-  addNextLine();
+  bootTimer = window.setTimeout(revealLine, 180);
 }
+
+bootSkip?.addEventListener("click", () => finishBoot());
+
+/* ---------------------------------------------------------
+   Palette control
+   --------------------------------------------------------- */
+
+const themeSwitcher = select("#theme-switcher");
+const themeColorMeta = select("#theme-color-meta");
+const themes = ["sector", "solar", "ghost"];
+const themeLabels = {
+  sector: "Sector cyan",
+  solar: "Solar gold",
+  ghost: "Ghost mint"
+};
+const themeColors = {
+  sector: "#040711",
+  solar: "#0b0809",
+  ghost: "#040a0d"
+};
+
+function applyTheme(theme, announce = false) {
+  const safeTheme = themes.includes(theme) ? theme : "sector";
+  const nextTheme = themes[(themes.indexOf(safeTheme) + 1) % themes.length];
+
+  document.documentElement.dataset.theme = safeTheme;
+  themeColorMeta?.setAttribute("content", themeColors[safeTheme]);
+  themeSwitcher?.setAttribute(
+    "aria-label",
+    `${themeLabels[safeTheme]} active. Switch to ${themeLabels[nextTheme]}.`
+  );
+
+  writeStorage(localStorage, "ns7-theme", safeTheme);
+
+  if (announce) {
+    showToast(`INTERFACE PALETTE // ${themeLabels[safeTheme].toUpperCase()}`);
+  }
+}
+
+function cycleTheme() {
+  const currentTheme = document.documentElement.dataset.theme || "sector";
+  const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+  applyTheme(nextTheme, true);
+}
+
+themeSwitcher?.addEventListener("click", cycleTheme);
+applyTheme(document.documentElement.dataset.theme || "sector");
+
+/* ---------------------------------------------------------
+   Ambient particles and pointer lighting
+   --------------------------------------------------------- */
+
+const particlesContainer = select("#particles");
+const pointerAura = select("#pointer-aura");
+const hero = select(".hero");
 
 function createParticles() {
-  if (!particlesContainer) {
+  if (!particlesContainer || reduceMotionQuery.matches) {
     return;
   }
 
-  const particleCount = reduceMotion ? 12 : 42;
+  particlesContainer.replaceChildren();
+  const count = window.innerWidth < 720 ? 8 : 18;
+  const fragment = document.createDocumentFragment();
 
-  for (let index = 0; index < particleCount; index += 1) {
+  for (let index = 0; index < count; index += 1) {
     const particle = document.createElement("span");
-
-    const size = Math.random() * 2.5 + 1;
-    const x = Math.random() * 100;
-    const y = Math.random() * 100;
-    const opacity = Math.random() * 0.55 + 0.15;
-    const duration = Math.random() * 7 + 5;
-    const driftX = Math.random() * 50 - 25;
-    const driftY = Math.random() * 70 - 35;
+    const size = Math.random() * 2 + 0.8;
 
     particle.className = "particle";
-
     particle.style.setProperty("--size", `${size}px`);
-    particle.style.setProperty("--x", `${x}%`);
-    particle.style.setProperty("--y", `${y}%`);
-    particle.style.setProperty("--opacity", opacity.toString());
-    particle.style.setProperty("--duration", `${duration}s`);
-    particle.style.setProperty("--drift-x", `${driftX}px`);
-    particle.style.setProperty("--drift-y", `${driftY}px`);
-
-    particlesContainer.appendChild(particle);
+    particle.style.setProperty("--x", `${Math.random() * 100}%`);
+    particle.style.setProperty("--y", `${Math.random() * 100}%`);
+    particle.style.setProperty("--opacity", String(Math.random() * 0.45 + 0.12));
+    particle.style.setProperty("--duration", `${Math.random() * 9 + 8}s`);
+    particle.style.setProperty("--drift-x", `${Math.random() * 50 - 25}px`);
+    particle.style.setProperty("--drift-y", `${Math.random() * 70 - 35}px`);
+    fragment.appendChild(particle);
   }
+
+  particlesContainer.appendChild(fragment);
 }
 
-function addPointerGlow() {
-  if (reduceMotion) {
+function enablePointerLighting() {
+  if (!pointerAura || !finePointerQuery.matches || reduceMotionQuery.matches) {
     return;
   }
 
-  const background = document.querySelector(".site-background");
+  let frameRequested = false;
+  let pointerX = -500;
+  let pointerY = -500;
 
-  if (!background) {
-    return;
+  function renderPointer() {
+    pointerAura.style.setProperty("--pointer-x", `${pointerX}px`);
+    pointerAura.style.setProperty("--pointer-y", `${pointerY}px`);
+
+    if (hero) {
+      const horizontal = ((pointerX / window.innerWidth) - 0.5) * 7;
+      const vertical = ((pointerY / window.innerHeight) - 0.5) * 5;
+      hero.style.setProperty("--parallax-x", horizontal.toFixed(2));
+      hero.style.setProperty("--parallax-y", vertical.toFixed(2));
+    }
+
+    frameRequested = false;
   }
 
   window.addEventListener("pointermove", (event) => {
-    const x = event.clientX / window.innerWidth;
-    const y = event.clientY / window.innerHeight;
-
-    background.style.transform =
-      `translate(${(x - 0.5) * -5}px, ${(y - 0.5) * -5}px)`;
-  });
-}
-
-/* =========================================================
-   NEON SECTOR SCAN MINI-GAME
-   ========================================================= */
-// just adding this to retry building the website.
-
-document.addEventListener("DOMContentLoaded", () => {
-  const openButton = document.getElementById("open-sector-scan");
-  const closeButton = document.getElementById("close-sector-scan");
-  const startButton = document.getElementById("start-sector-scan");
-
-  const overlay = document.getElementById("sector-scan-overlay");
-  const scanField = document.getElementById("scan-field");
-  const scanMessage = document.getElementById("scan-message");
-
-  const scoreDisplay = document.getElementById("scan-score");
-  const timeDisplay = document.getElementById("scan-time");
-  const statusDisplay = document.getElementById("scan-status");
-
-  if (
-    !openButton ||
-    !closeButton ||
-    !startButton ||
-    !overlay ||
-    !scanField ||
-    !scanMessage
-  ) {
-    console.warn("Sector Scan elements were not found.");
-    return;
-  }
-
-  let score = 0;
-  let timeRemaining = 20;
-  let gameRunning = false;
-
-  let countdownInterval = null;
-  let anomalyInterval = null;
-
-  function openScanner() {
-    overlay.classList.add("is-open");
-    overlay.setAttribute("aria-hidden", "false");
-    document.body.classList.add("scan-game-open");
-  }
-
-  function closeScanner() {
-    stopGame();
-
-    overlay.classList.remove("is-open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("scan-game-open");
-
-    showStartMessage();
-  }
-
-  function showStartMessage() {
-    scanMessage.classList.remove("is-hidden");
-
-    scanMessage.innerHTML = `
-      <h3>SCANNER READY</h3>
-      <p>Locate and neutralize unstable energy signals.</p>
-      <button id="start-sector-scan" type="button">
-        INITIALIZE SCAN
-      </button>
-    `;
-
-    const newStartButton = document.getElementById("start-sector-scan");
-
-    newStartButton.addEventListener("click", startGame);
-
-    scoreDisplay.textContent = "000";
-    timeDisplay.textContent = "20";
-    statusDisplay.textContent = "STANDBY";
-  }
-
-  function startGame() {
-    stopGame();
-
-    score = 0;
-    timeRemaining = 20;
-    gameRunning = true;
-
-    scoreDisplay.textContent = "000";
-    timeDisplay.textContent = String(timeRemaining);
-    statusDisplay.textContent = "SCANNING";
-
-    scanMessage.classList.add("is-hidden");
-
-    createAnomaly();
-
-    anomalyInterval = window.setInterval(() => {
-      createAnomaly();
-    }, 760);
-
-    countdownInterval = window.setInterval(() => {
-      timeRemaining -= 1;
-      timeDisplay.textContent = String(timeRemaining).padStart(2, "0");
-
-      if (timeRemaining <= 0) {
-        finishGame();
-      }
-    }, 1000);
-  }
-
-  function createAnomaly() {
-    if (!gameRunning) {
+    if (event.pointerType && event.pointerType !== "mouse") {
       return;
     }
 
-    const anomaly = document.createElement("button");
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    pointerAura.classList.add("is-active");
 
-    anomaly.type = "button";
-    anomaly.className = "scan-anomaly";
-    anomaly.setAttribute("aria-label", "Energy anomaly");
-
-    const fieldWidth = scanField.clientWidth;
-    const fieldHeight = scanField.clientHeight;
-
-    const safePadding = 55;
-
-    const maximumX = Math.max(
-      safePadding,
-      fieldWidth - safePadding - 34
-    );
-
-    const maximumY = Math.max(
-      safePadding,
-      fieldHeight - safePadding - 34
-    );
-
-    const x =
-      safePadding +
-      Math.random() * (maximumX - safePadding);
-
-    const y =
-      safePadding +
-      Math.random() * (maximumY - safePadding);
-
-    anomaly.style.left = `${x}px`;
-    anomaly.style.top = `${y}px`;
-
-    anomaly.addEventListener("click", () => {
-      if (!gameRunning) {
-        return;
-      }
-
-      score += 100;
-      scoreDisplay.textContent = String(score).padStart(3, "0");
-
-      createHitText(x, y);
-      anomaly.remove();
-    });
-
-    scanField.appendChild(anomaly);
-
-    const lifetime = 900 + Math.random() * 700;
-
-    window.setTimeout(() => {
-      anomaly.remove();
-    }, lifetime);
-  }
-
-  function createHitText(x, y) {
-    const hitText = document.createElement("span");
-
-    hitText.className = "scan-hit";
-    hitText.textContent = "+100";
-
-    hitText.style.left = `${x}px`;
-    hitText.style.top = `${y}px`;
-
-    scanField.appendChild(hitText);
-
-    window.setTimeout(() => {
-      hitText.remove();
-    }, 700);
-  }
-
-  function finishGame() {
-    gameRunning = false;
-
-    clearTimers();
-    removeAnomalies();
-
-    statusDisplay.textContent = "COMPLETE";
-
-    let rank = "SIGNAL TRAINEE";
-    let message = "Scanner calibration requires improvement.";
-
-    if (score >= 1800) {
-      rank = "SECTOR COMMANDER";
-      message = "Exceptional response speed detected.";
-    } else if (score >= 1200) {
-      rank = "ELITE OPERATOR";
-      message = "Strong anomaly suppression performance.";
-    } else if (score >= 700) {
-      rank = "FIELD AGENT";
-      message = "Sector stability successfully improved.";
+    if (!frameRequested) {
+      frameRequested = true;
+      window.requestAnimationFrame(renderPointer);
     }
+  }, { passive: true });
 
-    scanMessage.innerHTML = `
-      <h3>${rank}</h3>
-      <p>
-        Final score: <strong>${score}</strong><br>
-        ${message}
-      </p>
-      <button id="restart-sector-scan" type="button">
-        SCAN AGAIN
-      </button>
-    `;
-
-    scanMessage.classList.remove("is-hidden");
-
-    const restartButton = document.getElementById(
-      "restart-sector-scan"
-    );
-
-    restartButton.addEventListener("click", startGame);
-  }
-
-  function clearTimers() {
-    window.clearInterval(countdownInterval);
-    window.clearInterval(anomalyInterval);
-
-    countdownInterval = null;
-    anomalyInterval = null;
-  }
-
-  function removeAnomalies() {
-    scanField
-      .querySelectorAll(".scan-anomaly, .scan-hit")
-      .forEach((element) => element.remove());
-  }
-
-  function stopGame() {
-    gameRunning = false;
-    clearTimers();
-    removeAnomalies();
-  }
-
-  openButton.addEventListener("click", openScanner);
-  closeButton.addEventListener("click", closeScanner);
-  startButton.addEventListener("click", startGame);
-
-  overlay.addEventListener("click", (event) => {
-    if (event.target === overlay) {
-      closeScanner();
-    }
+  document.documentElement.addEventListener("mouseleave", () => {
+    pointerAura.classList.remove("is-active");
+    hero?.style.setProperty("--parallax-x", "0");
+    hero?.style.setProperty("--parallax-y", "0");
   });
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && overlay.classList.contains("is-open")) {
-      closeScanner();
+  window.addEventListener("blur", () => pointerAura.classList.remove("is-active"));
+}
+
+/* ---------------------------------------------------------
+   Scroll progress, navigation, and reveal storytelling
+   --------------------------------------------------------- */
+
+const siteHeader = select("#site-header");
+const progressBar = select("#page-progress-bar");
+const navToggle = select("#nav-toggle");
+const navPanel = select("#nav-panel");
+const navLinks = selectAll("[data-nav-link]");
+let scrollFrameRequested = false;
+
+function updateScrollInterface() {
+  const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  const progress = Math.min(1, Math.max(0, window.scrollY / scrollable));
+
+  progressBar?.style.setProperty("--scroll-progress", String(progress));
+  siteHeader?.classList.toggle("is-scrolled", window.scrollY > 18);
+  scrollFrameRequested = false;
+}
+
+window.addEventListener("scroll", () => {
+  if (!scrollFrameRequested) {
+    scrollFrameRequested = true;
+    window.requestAnimationFrame(updateScrollInterface);
+  }
+}, { passive: true });
+
+function closeNavigation({ restoreFocus = false } = {}) {
+  if (!navToggle || !navPanel) {
+    return;
+  }
+
+  navToggle.setAttribute("aria-expanded", "false");
+  navToggle.setAttribute("aria-label", "Open navigation");
+  navPanel.classList.remove("is-open");
+  siteHeader?.classList.remove("nav-is-open");
+
+  if (restoreFocus) {
+    navToggle.focus();
+  }
+}
+
+navToggle?.addEventListener("click", () => {
+  const willOpen = navToggle.getAttribute("aria-expanded") !== "true";
+  navToggle.setAttribute("aria-expanded", String(willOpen));
+  navToggle.setAttribute("aria-label", willOpen ? "Close navigation" : "Open navigation");
+  navPanel?.classList.toggle("is-open", willOpen);
+  siteHeader?.classList.toggle("nav-is-open", willOpen);
+});
+
+navLinks.forEach((link) => link.addEventListener("click", () => closeNavigation()));
+
+document.addEventListener("click", (event) => {
+  if (
+    navPanel?.classList.contains("is-open") &&
+    !siteHeader?.contains(event.target)
+  ) {
+    closeNavigation();
+  }
+});
+
+const revealElements = selectAll(".reveal");
+
+function initializeReveals() {
+  document.documentElement.classList.add("reveal-ready");
+
+  if (reduceMotionQuery.matches || !("IntersectionObserver" in window)) {
+    revealElements.forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    rootMargin: "0px 0px -9%",
+    threshold: 0.08
+  });
+
+  revealElements.forEach((element) => observer.observe(element));
+}
+
+function initializeActiveNavigation() {
+  if (!("IntersectionObserver" in window)) {
+    return;
+  }
+
+  const sections = ["work", "about", "lab", "contact"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    const visible = entries
+      .filter((entry) => entry.isIntersecting)
+      .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+
+    if (!visible) {
+      return;
+    }
+
+    navLinks.forEach((link) => {
+      const active = link.getAttribute("href") === `#${visible.target.id}`;
+      link.classList.toggle("is-active", active);
+      if (active) {
+        link.setAttribute("aria-current", "location");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  }, {
+    rootMargin: "-28% 0px -58%",
+    threshold: [0.01, 0.15]
+  });
+
+  sections.forEach((section) => sectionObserver.observe(section));
+}
+
+/* ---------------------------------------------------------
+   Live creator console
+   --------------------------------------------------------- */
+
+const localTime = select("#local-time");
+const focusSignal = select("#focus-signal");
+const focusSignals = [
+  "Interactive worlds",
+  "Game systems",
+  "Local AI workflows",
+  "Visual interfaces"
+];
+
+function updateLocalTime() {
+  if (!localTime) {
+    return;
+  }
+
+  localTime.textContent = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).format(new Date());
+}
+
+function rotateFocusSignal() {
+  if (!focusSignal || reduceMotionQuery.matches) {
+    return;
+  }
+
+  let index = 0;
+  window.setInterval(() => {
+    index = (index + 1) % focusSignals.length;
+    focusSignal.textContent = focusSignals[index];
+  }, 3200);
+}
+
+/* ---------------------------------------------------------
+   Restrained project-card depth
+   --------------------------------------------------------- */
+
+function initializeCardTilt() {
+  if (!finePointerQuery.matches || reduceMotionQuery.matches) {
+    return;
+  }
+
+  selectAll("[data-tilt]").forEach((card) => {
+    let frameRequested = false;
+    let latestEvent = null;
+
+    function renderTilt() {
+      const bounds = card.getBoundingClientRect();
+      const x = (latestEvent.clientX - bounds.left) / bounds.width;
+      const y = (latestEvent.clientY - bounds.top) / bounds.height;
+
+      card.style.setProperty("--rx", `${((0.5 - y) * 3).toFixed(2)}deg`);
+      card.style.setProperty("--ry", `${((x - 0.5) * 3).toFixed(2)}deg`);
+      card.style.setProperty("--card-x", `${(x * 100).toFixed(1)}%`);
+      card.style.setProperty("--card-y", `${(y * 100).toFixed(1)}%`);
+      frameRequested = false;
+    }
+
+    card.addEventListener("pointermove", (event) => {
+      latestEvent = event;
+      if (!frameRequested) {
+        frameRequested = true;
+        window.requestAnimationFrame(renderTilt);
+      }
+    });
+
+    card.addEventListener("pointerleave", () => {
+      card.style.setProperty("--rx", "0deg");
+      card.style.setProperty("--ry", "0deg");
+      card.style.setProperty("--card-x", "50%");
+      card.style.setProperty("--card-y", "50%");
+    });
+  });
+}
+
+/* ---------------------------------------------------------
+   Command deck
+   --------------------------------------------------------- */
+
+const commandDialog = select("#command-dialog");
+const commandTrigger = select("#command-trigger");
+const commandClose = select("#close-command");
+const commandSearch = select("#command-search-input");
+const commandItems = selectAll("[data-command-keywords]");
+const commandEmpty = select("#command-empty");
+let commandReturnFocus = null;
+let selectedCommandIndex = 0;
+
+function syncDialogBodyState() {
+  const anyDialogOpen = selectAll("dialog").some((dialog) => dialog.open);
+  document.body.classList.toggle("dialog-open", anyDialogOpen);
+}
+
+function visibleCommandItems() {
+  return commandItems.filter((item) => !item.hidden);
+}
+
+function selectCommand(index) {
+  const visibleItems = visibleCommandItems();
+
+  commandItems.forEach((item) => item.classList.remove("is-selected"));
+
+  if (!visibleItems.length) {
+    selectedCommandIndex = 0;
+    return;
+  }
+
+  selectedCommandIndex = (index + visibleItems.length) % visibleItems.length;
+  visibleItems[selectedCommandIndex].classList.add("is-selected");
+  visibleItems[selectedCommandIndex].scrollIntoView({ block: "nearest" });
+}
+
+function filterCommands() {
+  const query = commandSearch?.value.trim().toLowerCase() || "";
+
+  commandItems.forEach((item) => {
+    const searchable = `${item.dataset.commandKeywords} ${item.textContent}`.toLowerCase();
+    item.hidden = Boolean(query) && !searchable.includes(query);
+  });
+
+  const visibleItems = visibleCommandItems();
+  if (commandEmpty) {
+    commandEmpty.hidden = visibleItems.length > 0;
+  }
+  selectCommand(0);
+}
+
+function openCommandDeck(trigger = document.activeElement) {
+  if (!commandDialog || commandDialog.open || scanDialog?.open) {
+    return;
+  }
+
+  closeNavigation();
+  commandReturnFocus = trigger instanceof HTMLElement ? trigger : commandTrigger;
+  commandDialog.showModal();
+  syncDialogBodyState();
+
+  if (commandSearch) {
+    commandSearch.value = "";
+    filterCommands();
+    window.setTimeout(() => commandSearch.focus(), 0);
+  }
+}
+
+function closeCommandDeck() {
+  if (commandDialog?.open) {
+    commandDialog.close();
+  }
+}
+
+commandTrigger?.addEventListener("click", () => openCommandDeck(commandTrigger));
+commandClose?.addEventListener("click", closeCommandDeck);
+commandSearch?.addEventListener("input", filterCommands);
+
+commandSearch?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    selectCommand(selectedCommandIndex + 1);
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    selectCommand(selectedCommandIndex - 1);
+  } else if (event.key === "Enter") {
+    const selected = visibleCommandItems()[selectedCommandIndex];
+    if (selected) {
+      event.preventDefault();
+      selected.click();
+    }
+  }
+});
+
+commandDialog?.addEventListener("click", (event) => {
+  if (event.target === commandDialog) {
+    closeCommandDeck();
+  }
+});
+
+commandDialog?.addEventListener("close", () => {
+  syncDialogBodyState();
+  commandReturnFocus?.focus();
+});
+
+commandItems.forEach((item) => {
+  item.addEventListener("click", (event) => {
+    const targetSelector = item.dataset.commandTarget;
+
+    if (targetSelector) {
+      event.preventDefault();
+      closeCommandDeck();
+      window.setTimeout(() => {
+        select(targetSelector)?.scrollIntoView({ behavior: reduceMotionQuery.matches ? "auto" : "smooth" });
+      }, 20);
+    } else if (item instanceof HTMLAnchorElement) {
+      closeCommandDeck();
     }
   });
 });
 
-createParticles();
-addPointerGlow();
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    if (commandDialog?.open) {
+      closeCommandDeck();
+    } else {
+      openCommandDeck();
+    }
+  }
+
+  if (event.key === "Escape" && navPanel?.classList.contains("is-open")) {
+    closeNavigation({ restoreFocus: true });
+  }
+});
+
+/* ---------------------------------------------------------
+   Interactive profile terminal
+   --------------------------------------------------------- */
+
+const terminalForm = select("#terminal-form");
+const terminalInput = select("#terminal-input");
+const terminalOutput = select("#terminal-output");
+
+function appendTerminalLine(content, className = "") {
+  if (!terminalOutput) {
+    return null;
+  }
+
+  const line = document.createElement("div");
+  line.className = `terminal-line ${className}`.trim();
+  line.textContent = content;
+  terminalOutput.appendChild(line);
+
+  while (terminalOutput.children.length > 42) {
+    terminalOutput.firstElementChild?.remove();
+  }
+
+  terminalOutput.scrollTop = terminalOutput.scrollHeight;
+  return line;
+}
+
+function executeTerminalCommand(rawCommand) {
+  const command = rawCommand.trim().toLowerCase();
+
+  if (!command) {
+    return;
+  }
+
+  appendTerminalLine(command, "command-line");
+
+  const responses = {
+    help: "Available commands: whoami · projects · stack · mission · status · theme · scan · github · clear",
+    whoami: "Adam // creative developer exploring games, cinematic web experiences, Minecraft systems, and local AI.",
+    projects: "Active files: Neon Sector-7 · 2D Game Challenge · Minecraft Engineering · Local AI Lab.",
+    stack: "Creative web: HTML, CSS, JavaScript, Three.js // Systems: Java, Paper, databases // Lab: local models, Ollama, image workflows.",
+    mission: "Turn ambitious ideas into complete experiences—systems that work and worlds people want to explore.",
+    status: `All public systems online. Scanner high signal: ${readStorage(localStorage, "ns7-high-score", "000")}.`
+  };
+
+  if (responses[command]) {
+    appendTerminalLine(responses[command]);
+  } else if (command === "clear") {
+    terminalOutput?.replaceChildren();
+  } else if (command === "theme") {
+    cycleTheme();
+    appendTerminalLine(`Palette shifted to ${themeLabels[document.documentElement.dataset.theme]}.`);
+  } else if (command === "scan") {
+    appendTerminalLine("Anomaly scanner initialized. Opening secure channel...");
+    window.setTimeout(() => openScanner(terminalInput), 260);
+  } else if (command === "github") {
+    const line = appendTerminalLine("Source channel: ");
+    const link = document.createElement("a");
+    link.href = "https://github.com/doctordoomies";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "github.com/doctordoomies ↗";
+    line?.appendChild(link);
+  } else {
+    appendTerminalLine(`Unknown command: ${command}. Type "help" for a signal list.`, "error-line");
+  }
+}
+
+terminalForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  executeTerminalCommand(terminalInput?.value || "");
+  if (terminalInput) {
+    terminalInput.value = "";
+  }
+});
+
+selectAll("[data-terminal-command]").forEach((button) => {
+  button.addEventListener("click", () => {
+    executeTerminalCommand(button.dataset.terminalCommand || "");
+    terminalInput?.focus();
+  });
+});
+
+/* ---------------------------------------------------------
+   Contact utilities
+   --------------------------------------------------------- */
+
+const copyUsernameButton = select("#copy-username");
+
+async function copyGitHubHandle() {
+  const handle = "@doctordoomies";
+
+  try {
+    await navigator.clipboard.writeText(handle);
+    showToast(`COPIED TO CLIPBOARD // ${handle}`);
+  } catch (error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = handle;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    document.body.appendChild(textArea);
+    textArea.select();
+    const copied = document.execCommand("copy");
+    textArea.remove();
+    showToast(copied ? `COPIED TO CLIPBOARD // ${handle}` : `GITHUB HANDLE // ${handle}`);
+  }
+}
+
+copyUsernameButton?.addEventListener("click", copyGitHubHandle);
+
+const currentYear = select("#current-year");
+if (currentYear) {
+  currentYear.textContent = String(new Date().getFullYear());
+}
+
+/* ---------------------------------------------------------
+   Accessible, elapsed-time-based anomaly scanner
+   --------------------------------------------------------- */
+
+const scanDialog = select("#sector-scan-dialog");
+const closeScanButton = select("#close-sector-scan");
+const scanField = select("#scan-field");
+const scanMessage = select("#scan-message");
+const scoreDisplay = select("#scan-score");
+const timeDisplay = select("#scan-time");
+const highScoreDisplay = select("#scan-high-score");
+const statusDisplay = select("#scan-status");
+const scanAnnouncement = select("#scan-announcement");
+
+let score = 0;
+let streak = 0;
+let highScore = Number.parseInt(readStorage(localStorage, "ns7-high-score", "0"), 10) || 0;
+let gameRunning = false;
+let gamePaused = false;
+let endTime = 0;
+let pausedAt = 0;
+let timerFrame = null;
+let spawnTimer = null;
+let scanReturnFocus = null;
+const anomalyTimers = new Map();
+const effectTimers = new Set();
+
+function paddedScore(value) {
+  return String(value).padStart(3, "0");
+}
+
+function updateHighScoreDisplay() {
+  if (highScoreDisplay) {
+    highScoreDisplay.textContent = paddedScore(highScore);
+  }
+}
+
+function setScanStartMessage() {
+  if (!scanMessage) {
+    return;
+  }
+
+  scanMessage.classList.remove("is-hidden");
+  scanMessage.innerHTML = `
+    <p class="scan-message-code">SYSTEM_READY</p>
+    <h3>Scanner ready</h3>
+    <p>Locate and neutralize unstable energy signals before time expires.</p>
+    <button type="button" data-scan-start>Initialize scan</button>
+  `;
+
+  scoreDisplay.textContent = "000";
+  timeDisplay.textContent = "20";
+  statusDisplay.textContent = "Standby";
+  updateHighScoreDisplay();
+  scanField?.setAttribute("tabindex", "-1");
+}
+
+function openScanner(trigger = document.activeElement) {
+  if (!scanDialog || scanDialog.open) {
+    return;
+  }
+
+  if (commandDialog?.open) {
+    closeCommandDeck();
+  }
+
+  scanReturnFocus = trigger instanceof HTMLElement ? trigger : select("[data-open-scan]");
+  updateHighScoreDisplay();
+  scanDialog.showModal();
+  syncDialogBodyState();
+  window.setTimeout(() => select("[data-scan-start]", scanMessage)?.focus(), 0);
+}
+
+function closeScanner() {
+  if (scanDialog?.open) {
+    scanDialog.close();
+  }
+}
+
+function clearAnomalyTimer(anomaly) {
+  const timer = anomalyTimers.get(anomaly);
+  if (timer) {
+    window.clearTimeout(timer);
+    anomalyTimers.delete(anomaly);
+  }
+}
+
+function removeAnomalies() {
+  anomalyTimers.forEach((timer) => window.clearTimeout(timer));
+  anomalyTimers.clear();
+  selectAll(".scan-anomaly, .scan-hit", scanField).forEach((element) => element.remove());
+}
+
+function clearGameTimers() {
+  window.cancelAnimationFrame(timerFrame);
+  window.clearTimeout(spawnTimer);
+  timerFrame = null;
+  spawnTimer = null;
+
+  effectTimers.forEach((timer) => window.clearTimeout(timer));
+  effectTimers.clear();
+}
+
+function stopGame({ resetMessage = false } = {}) {
+  gameRunning = false;
+  gamePaused = false;
+  clearGameTimers();
+  removeAnomalies();
+
+  if (resetMessage) {
+    setScanStartMessage();
+  }
+}
+
+function createHitText(x, y, points) {
+  if (!scanField) {
+    return;
+  }
+
+  const hitText = document.createElement("span");
+  hitText.className = "scan-hit";
+  hitText.textContent = `+${points}`;
+  hitText.style.left = `${x}px`;
+  hitText.style.top = `${y}px`;
+  scanField.appendChild(hitText);
+
+  const timer = window.setTimeout(() => {
+    hitText.remove();
+    effectTimers.delete(timer);
+  }, 700);
+
+  effectTimers.add(timer);
+}
+
+function neutralizeAnomaly(anomaly) {
+  if (!gameRunning || gamePaused || !anomaly?.isConnected) {
+    return;
+  }
+
+  clearAnomalyTimer(anomaly);
+  streak += 1;
+  const bonus = Math.floor(streak / 5) * 25;
+  const points = 100 + bonus;
+  score += points;
+
+  scoreDisplay.textContent = paddedScore(score);
+  statusDisplay.textContent = streak >= 5 ? `Combo x${streak}` : "Scanning";
+
+  const x = Number.parseFloat(anomaly.style.left) || 0;
+  const y = Number.parseFloat(anomaly.style.top) || 0;
+  createHitText(x, y, points);
+  anomaly.remove();
+}
+
+function createAnomaly() {
+  if (!gameRunning || gamePaused || !scanField) {
+    return;
+  }
+
+  const existing = selectAll(".scan-anomaly", scanField);
+  if (existing.length >= 4) {
+    const oldest = existing[0];
+    clearAnomalyTimer(oldest);
+    oldest.remove();
+    streak = 0;
+  }
+
+  const anomaly = document.createElement("button");
+  anomaly.type = "button";
+  anomaly.className = "scan-anomaly";
+  anomaly.tabIndex = -1;
+  anomaly.setAttribute("aria-label", "Unstable energy signal");
+
+  const fieldWidth = scanField.clientWidth;
+  const fieldHeight = scanField.clientHeight;
+  const targetSize = 46;
+  const padding = fieldWidth < 430 ? 25 : 44;
+  const maximumX = Math.max(padding, fieldWidth - targetSize - padding);
+  const maximumY = Math.max(padding, fieldHeight - targetSize - padding);
+  const x = padding + Math.random() * Math.max(0, maximumX - padding);
+  const y = padding + Math.random() * Math.max(0, maximumY - padding);
+
+  anomaly.style.left = `${x}px`;
+  anomaly.style.top = `${y}px`;
+  anomaly.addEventListener("click", () => neutralizeAnomaly(anomaly));
+  scanField.appendChild(anomaly);
+
+  const elapsed = Math.max(0, 20000 - (endTime - performance.now()));
+  const lifetime = Math.max(720, 1450 - elapsed * 0.022) + Math.random() * 300;
+  const timer = window.setTimeout(() => {
+    anomalyTimers.delete(anomaly);
+    if (anomaly.isConnected) {
+      anomaly.remove();
+      streak = 0;
+      if (gameRunning) {
+        statusDisplay.textContent = "Signal missed";
+      }
+    }
+  }, lifetime);
+
+  anomalyTimers.set(anomaly, timer);
+}
+
+function scheduleAnomaly() {
+  if (!gameRunning || gamePaused) {
+    return;
+  }
+
+  const elapsed = Math.max(0, 20000 - (endTime - performance.now()));
+  const delay = Math.max(380, 760 - elapsed * 0.018);
+
+  spawnTimer = window.setTimeout(() => {
+    createAnomaly();
+    scheduleAnomaly();
+  }, delay);
+}
+
+function finishGame() {
+  if (!gameRunning) {
+    return;
+  }
+
+  gameRunning = false;
+  clearGameTimers();
+  removeAnomalies();
+
+  const previousHighScore = highScore;
+  highScore = Math.max(highScore, score);
+  writeStorage(localStorage, "ns7-high-score", String(highScore));
+  updateHighScoreDisplay();
+  statusDisplay.textContent = "Complete";
+  scanField?.setAttribute("tabindex", "-1");
+
+  let rank = "SIGNAL TRAINEE";
+  let result = "Scanner calibration will improve with another run.";
+
+  if (score >= 2200) {
+    rank = "SECTOR COMMANDER";
+    result = "Exceptional response speed detected.";
+  } else if (score >= 1500) {
+    rank = "ELITE OPERATOR";
+    result = "Strong anomaly suppression performance.";
+  } else if (score >= 800) {
+    rank = "FIELD AGENT";
+    result = "Sector stability successfully improved.";
+  }
+
+  scanMessage.innerHTML = `
+    <p class="scan-message-code">SCAN_COMPLETE</p>
+    <h3>${rank}</h3>
+    <p>Final score: <strong>${score}</strong><br>${result}</p>
+    <button type="button" data-scan-start>Scan again</button>
+  `;
+  scanMessage.classList.remove("is-hidden");
+
+  if (scanAnnouncement) {
+    scanAnnouncement.textContent = `Scan complete. ${rank}. Final score ${score}.`;
+  }
+
+  if (score > previousHighScore) {
+    showToast(`NEW HIGH SIGNAL // ${paddedScore(score)}`);
+  }
+
+  window.setTimeout(() => select("[data-scan-start]", scanMessage)?.focus(), 0);
+}
+
+function updateGameClock(now) {
+  if (!gameRunning) {
+    return;
+  }
+
+  if (gamePaused) {
+    timerFrame = window.requestAnimationFrame(updateGameClock);
+    return;
+  }
+
+  const millisecondsRemaining = Math.max(0, endTime - now);
+  const secondsRemaining = Math.ceil(millisecondsRemaining / 1000);
+  timeDisplay.textContent = String(secondsRemaining).padStart(2, "0");
+
+  if (millisecondsRemaining <= 0) {
+    finishGame();
+    return;
+  }
+
+  timerFrame = window.requestAnimationFrame(updateGameClock);
+}
+
+function startGame() {
+  stopGame();
+  score = 0;
+  streak = 0;
+  gameRunning = true;
+  gamePaused = false;
+  endTime = performance.now() + 20000;
+
+  scoreDisplay.textContent = "000";
+  timeDisplay.textContent = "20";
+  statusDisplay.textContent = "Scanning";
+  scanAnnouncement.textContent = "Scan started. Twenty seconds remaining.";
+  scanMessage.classList.add("is-hidden");
+  scanField.setAttribute("tabindex", "0");
+  scanField.focus();
+
+  createAnomaly();
+  scheduleAnomaly();
+  timerFrame = window.requestAnimationFrame(updateGameClock);
+}
+
+selectAll("[data-open-scan]").forEach((button) => {
+  button.addEventListener("click", () => openScanner(button));
+});
+
+select("[data-command-scan]")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  closeCommandDeck();
+  window.setTimeout(() => openScanner(commandTrigger), 40);
+});
+
+scanMessage?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-scan-start]")) {
+    startGame();
+  }
+});
+
+closeScanButton?.addEventListener("click", closeScanner);
+
+scanDialog?.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeScanner();
+});
+
+scanDialog?.addEventListener("click", (event) => {
+  if (event.target === scanDialog) {
+    closeScanner();
+  }
+});
+
+scanDialog?.addEventListener("close", () => {
+  stopGame({ resetMessage: true });
+  syncDialogBodyState();
+  scanReturnFocus?.focus();
+});
+
+scanField?.addEventListener("keydown", (event) => {
+  if (gameRunning && (event.key === " " || event.code === "Space")) {
+    event.preventDefault();
+    const currentAnomaly = select(".scan-anomaly", scanField);
+
+    if (currentAnomaly) {
+      neutralizeAnomaly(currentAnomaly);
+    } else {
+      statusDisplay.textContent = "Searching";
+    }
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!gameRunning) {
+    return;
+  }
+
+  if (document.hidden && !gamePaused) {
+    gamePaused = true;
+    pausedAt = performance.now();
+    window.clearTimeout(spawnTimer);
+    spawnTimer = null;
+    removeAnomalies();
+    statusDisplay.textContent = "Paused";
+  } else if (!document.hidden && gamePaused) {
+    endTime += performance.now() - pausedAt;
+    gamePaused = false;
+    statusDisplay.textContent = "Scanning";
+    createAnomaly();
+    scheduleAnomaly();
+  }
+});
+
+/* ---------------------------------------------------------
+   Initialize the interface
+   --------------------------------------------------------- */
+
 runBootSequence();
+createParticles();
+enablePointerLighting();
+initializeReveals();
+initializeActiveNavigation();
+initializeCardTilt();
+updateScrollInterface();
+updateLocalTime();
+rotateFocusSignal();
+updateHighScoreDisplay();
+window.setInterval(updateLocalTime, 1000);
+
+reduceMotionQuery.addEventListener?.("change", (event) => {
+  if (event.matches) {
+    particlesContainer?.replaceChildren();
+    revealElements.forEach((element) => element.classList.add("is-visible"));
+    finishBoot();
+  } else {
+    createParticles();
+  }
+});
