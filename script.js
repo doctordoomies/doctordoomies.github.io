@@ -1328,4 +1328,5 @@ reduceMotionQuery.addEventListener?.("change", (event) => {
   } else {
     createParticles();
   }
+    // rerun changes
 });
