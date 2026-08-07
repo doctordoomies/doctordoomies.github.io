@@ -7,9 +7,25 @@ const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const finePointerQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
 const compactLayoutQuery = window.matchMedia("(max-width: 720px)");
 
+const sessionStore = (() => {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+})();
+
+const localStore = (() => {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+})();
+
 function readStorage(storage, key, fallback = null) {
   try {
-    return storage.getItem(key) ?? fallback;
+    return storage?.getItem(key) ?? fallback;
   } catch (error) {
     return fallback;
   }
@@ -17,7 +33,7 @@ function readStorage(storage, key, fallback = null) {
 
 function writeStorage(storage, key, value) {
   try {
-    storage.setItem(key, value);
+    storage?.setItem(key, value);
   } catch (error) {
     // The interface remains fully usable when browser storage is unavailable.
   }
@@ -50,27 +66,32 @@ const bootProgress = select("#boot-progress");
 const bootProgressBar = select("#boot-progress-bar");
 const bootSkip = select("#boot-skip");
 const bootAnnouncement = select("#boot-announcement");
+const bootStatus = select("#boot-status");
+const bootLinkState = select("#boot-link-state");
+const bootLinkCopy = select("#boot-link-copy");
+const skipLink = select(".skip-link");
 
-const bootLines = [
-  "[ OK ] Identity signal found: ADAM",
-  "[ OK ] Linking creative systems",
-  "[ OK ] Mapping active build sectors",
-  "[ OK ] Calibrating interface atmosphere",
-  "[READY] Neon Sector-7 online"
+const bootSteps = [
+  { line: "> locating orbital relay...", state: "SEARCHING DEEP-SPACE RELAY" },
+  { line: "> orbital signal acquired", state: "SYNCHRONIZING ORBITAL SIGNAL" },
+  { line: "> encryption tunnel established", state: "NEGOTIATING SECURE CHANNEL" },
+  { line: "> operator identity confirmed: ADAM", state: "VERIFYING OPERATOR IDENTITY" },
+  { line: "> atmospheric interface online", state: "INITIALIZING WORLD INTERFACE" },
+  { line: "> SECTOR-7 CONNECTION STABLE", state: "CONNECTION ESTABLISHED" }
 ];
 
 let bootFinished = false;
 let bootTimer = null;
 
 function setPageInert(isInert) {
-  [select("#site-header"), select("#main-content"), select(".site-footer")]
+  [skipLink, select("#site-header"), select("#main-content"), select(".site-footer"), select(".pulse-system")]
     .filter(Boolean)
     .forEach((element) => {
       element.inert = isInert;
     });
 }
 
-function finishBoot({ remember = true } = {}) {
+function finishBoot({ remember = true, restoreFocus = false } = {}) {
   if (bootFinished || !bootScreen) {
     return;
   }
@@ -84,11 +105,19 @@ function finishBoot({ remember = true } = {}) {
   }
 
   if (bootAnnouncement) {
-    bootAnnouncement.textContent = "Neon Sector-7 interface ready.";
+    bootAnnouncement.textContent = "Connection established. Neon Sector-7 interface ready.";
+  }
+
+  if (bootStatus) {
+    bootStatus.textContent = "CONNECTION ESTABLISHED";
+  }
+
+  if (bootLinkCopy) {
+    bootLinkCopy.textContent = "LINK STABLE";
   }
 
   if (remember) {
-    writeStorage(sessionStorage, "ns7-intro-seen", "true");
+    writeStorage(sessionStore, "ns7-intro-seen", "true");
   }
 
   document.body.classList.remove("booting");
@@ -98,15 +127,19 @@ function finishBoot({ remember = true } = {}) {
 
   window.setTimeout(() => {
     bootScreen.hidden = true;
+    if (restoreFocus || document.activeElement === bootSkip) {
+      select("#main-content")?.focus({ preventScroll: true });
+    }
   }, reduceMotionQuery.matches ? 0 : 620);
 }
 
 function runBootSequence() {
   if (!bootScreen || !bootLog || !bootProgress || !bootProgressBar) {
+    finishBoot({ remember: false });
     return;
   }
 
-  const introSeen = readStorage(sessionStorage, "ns7-intro-seen") === "true";
+  const introSeen = readStorage(sessionStore, "ns7-intro-seen") === "true";
 
   if (reduceMotionQuery.matches || introSeen) {
     bootScreen.hidden = true;
@@ -117,30 +150,34 @@ function runBootSequence() {
 
   document.body.classList.add("booting");
   setPageInert(true);
+  window.setTimeout(() => bootSkip?.focus({ preventScroll: true }), 0);
 
   let currentLine = 0;
 
   function revealLine() {
-    const line = bootLines[currentLine];
-    bootLog.textContent += `${currentLine ? "\n" : ""}${line}`;
+    const step = bootSteps[currentLine];
+    bootLog.textContent += `${currentLine ? "\n" : ""}${step.line}`;
+    if (bootStatus) {
+      bootStatus.textContent = step.state;
+    }
     currentLine += 1;
 
-    const percentage = Math.round((currentLine / bootLines.length) * 100);
+    const percentage = Math.round((currentLine / bootSteps.length) * 100);
     bootProgress.setAttribute("aria-valuenow", String(percentage));
     bootProgressBar.style.width = `${percentage}%`;
 
-    if (currentLine >= bootLines.length) {
-      bootTimer = window.setTimeout(finishBoot, 300);
+    if (currentLine >= bootSteps.length) {
+      bootTimer = window.setTimeout(finishBoot, 360);
       return;
     }
 
-    bootTimer = window.setTimeout(revealLine, 210);
+    bootTimer = window.setTimeout(revealLine, 195);
   }
 
   bootTimer = window.setTimeout(revealLine, 180);
 }
 
-bootSkip?.addEventListener("click", () => finishBoot());
+bootSkip?.addEventListener("click", () => finishBoot({ restoreFocus: true }));
 
 /* ---------------------------------------------------------
    Theme control
@@ -184,7 +221,7 @@ function applyTheme(theme, announce = false, transitionOrigin = null) {
       option.setAttribute("aria-checked", String(option.dataset.themeOption === safeTheme));
     });
 
-    writeStorage(localStorage, "ns7-theme", safeTheme);
+    writeStorage(localStore, "ns7-theme", safeTheme);
 
     if (announce && themeChanged) {
       showToast(`INTERFACE THEME // ${themeLabels[safeTheme].toUpperCase()}`);
@@ -342,6 +379,27 @@ const particlesContainer = select("#particles");
 const stellarStarfield = select("#stellar-starfield");
 const pointerAura = select("#pointer-aura");
 const hero = select(".hero");
+const coreStage = select("#core-stage");
+let pointerLightingInitialized = false;
+let pointerFrame = null;
+let pointerActive = false;
+
+function resetPointerWorld() {
+  pointerActive = false;
+  if (pointerFrame) {
+    window.cancelAnimationFrame(pointerFrame);
+    pointerFrame = null;
+  }
+  pointerAura?.classList.remove("is-active");
+  hero?.style.setProperty("--parallax-x", "0");
+  hero?.style.setProperty("--parallax-y", "0");
+  coreStage?.style.setProperty("--core-rx", "0deg");
+  coreStage?.style.setProperty("--core-ry", "0deg");
+  document.documentElement.style.setProperty("--stellar-x", "0px");
+  document.documentElement.style.setProperty("--stellar-y", "0px");
+  document.documentElement.style.setProperty("--stellar-far-x", "0px");
+  document.documentElement.style.setProperty("--stellar-far-y", "0px");
+}
 
 function createStarfield() {
   if (!stellarStarfield) {
@@ -405,25 +463,25 @@ function createParticles() {
 }
 
 function enablePointerLighting() {
-  if (!pointerAura || !finePointerQuery.matches || reduceMotionQuery.matches) {
+  if (
+    pointerLightingInitialized ||
+    !pointerAura ||
+    !finePointerQuery.matches ||
+    reduceMotionQuery.matches
+  ) {
     return;
   }
 
-  let frameRequested = false;
+  pointerLightingInitialized = true;
   let pointerX = -500;
   let pointerY = -500;
 
-  function resetPointerWorld() {
-    pointerAura.classList.remove("is-active");
-    hero?.style.setProperty("--parallax-x", "0");
-    hero?.style.setProperty("--parallax-y", "0");
-    document.documentElement.style.setProperty("--stellar-x", "0px");
-    document.documentElement.style.setProperty("--stellar-y", "0px");
-    document.documentElement.style.setProperty("--stellar-far-x", "0px");
-    document.documentElement.style.setProperty("--stellar-far-y", "0px");
-  }
-
   function renderPointer() {
+    pointerFrame = null;
+    if (!pointerActive || reduceMotionQuery.matches || !finePointerQuery.matches) {
+      return;
+    }
+
     pointerAura.style.setProperty("--pointer-x", `${pointerX}px`);
     pointerAura.style.setProperty("--pointer-y", `${pointerY}px`);
 
@@ -439,9 +497,10 @@ function enablePointerLighting() {
       const vertical = ((pointerY / window.innerHeight) - 0.5) * 5;
       hero.style.setProperty("--parallax-x", horizontal.toFixed(2));
       hero.style.setProperty("--parallax-y", vertical.toFixed(2));
+      coreStage?.style.setProperty("--core-rx", `${(-vertical * 0.3).toFixed(2)}deg`);
+      coreStage?.style.setProperty("--core-ry", `${(horizontal * 0.32).toFixed(2)}deg`);
     }
 
-    frameRequested = false;
   }
 
   window.addEventListener("pointermove", (event) => {
@@ -451,11 +510,11 @@ function enablePointerLighting() {
 
     pointerX = event.clientX;
     pointerY = event.clientY;
+    pointerActive = true;
     pointerAura.classList.add("is-active");
 
-    if (!frameRequested) {
-      frameRequested = true;
-      window.requestAnimationFrame(renderPointer);
+    if (!pointerFrame) {
+      pointerFrame = window.requestAnimationFrame(renderPointer);
     }
   }, { passive: true });
 
@@ -472,14 +531,30 @@ const progressBar = select("#page-progress-bar");
 const navToggle = select("#nav-toggle");
 const navPanel = select("#nav-panel");
 const navLinks = selectAll("[data-nav-link]");
+const signalStrip = select("#signal-strip");
+const signalToggle = select("#signal-toggle");
 let scrollFrameRequested = false;
+
+selectAll("i", signalStrip).forEach((marker) => marker.setAttribute("aria-hidden", "true"));
+signalToggle?.addEventListener("click", () => {
+  const paused = signalStrip?.classList.toggle("is-paused") || false;
+  signalToggle.setAttribute("aria-pressed", String(paused));
+  signalToggle.textContent = paused ? "Resume transmissions" : "Pause transmissions";
+});
 
 function updateScrollInterface() {
   const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
   const progress = Math.min(1, Math.max(0, window.scrollY / scrollable));
+  const heroExit = reduceMotionQuery.matches
+    ? 0
+    : Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.78)));
 
   progressBar?.style.setProperty("--scroll-progress", String(progress));
+  hero?.style.setProperty("--hero-shift", `${(heroExit * -34).toFixed(2)}px`);
+  hero?.style.setProperty("--hero-fade", String(1 - (heroExit * 0.34)));
+  hero?.style.setProperty("--hero-core-scale", String(1 - (heroExit * 0.055)));
   siteHeader?.classList.toggle("is-scrolled", window.scrollY > 18);
+  syncPulseVisibility();
   scrollFrameRequested = false;
 }
 
@@ -506,6 +581,60 @@ function closeNavigation({ restoreFocus = false } = {}) {
   }
 }
 
+let navigationFocusTimer = null;
+let cancelNavigationFocus = null;
+
+function clearScheduledNavigationFocus() {
+  window.clearTimeout(navigationFocusTimer);
+  navigationFocusTimer = null;
+  if (cancelNavigationFocus) {
+    window.removeEventListener("pointerdown", cancelNavigationFocus, true);
+    window.removeEventListener("keydown", cancelNavigationFocus, true);
+    cancelNavigationFocus = null;
+  }
+}
+
+function navigateTo(targetSelector, { updateHistory = true, focusTarget = true } = {}) {
+  const target = typeof targetSelector === "string" ? select(targetSelector) : targetSelector;
+
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  closeNavigation();
+  closeThemeMenu();
+
+  if (updateHistory && target.id) {
+    const nextHash = `#${target.id}`;
+    if (window.location.hash !== nextHash) {
+      window.history.pushState(null, "", nextHash);
+    }
+  }
+
+  target.scrollIntoView({ behavior: reduceMotionQuery.matches ? "auto" : "smooth", block: "start" });
+
+  if (focusTarget) {
+    clearScheduledNavigationFocus();
+    const focusOrigin = document.activeElement;
+    const heading = select("h1, h2", target) || target;
+    if (!heading.hasAttribute("tabindex")) {
+      heading.setAttribute("tabindex", "-1");
+    }
+    cancelNavigationFocus = clearScheduledNavigationFocus;
+    window.addEventListener("pointerdown", cancelNavigationFocus, { once: true, capture: true });
+    window.addEventListener("keydown", cancelNavigationFocus, { once: true, capture: true });
+    navigationFocusTimer = window.setTimeout(() => {
+      const focusUnchanged = document.activeElement === focusOrigin || document.activeElement === document.body;
+      clearScheduledNavigationFocus();
+      if (focusUnchanged) {
+        heading.focus({ preventScroll: true });
+      }
+    }, reduceMotionQuery.matches ? 0 : 520);
+  }
+
+  return true;
+}
+
 navToggle?.addEventListener("click", () => {
   const willOpen = navToggle.getAttribute("aria-expanded") !== "true";
   navToggle.setAttribute("aria-expanded", String(willOpen));
@@ -515,6 +644,13 @@ navToggle?.addEventListener("click", () => {
 });
 
 navLinks.forEach((link) => link.addEventListener("click", () => closeNavigation()));
+
+const mobileNavigationQuery = window.matchMedia("(max-width: 980px)");
+mobileNavigationQuery.addEventListener?.("change", (event) => {
+  if (!event.matches) {
+    closeNavigation();
+  }
+});
 
 document.addEventListener("click", (event) => {
   if (
@@ -555,28 +691,38 @@ function initializeActiveNavigation() {
     return;
   }
 
-  const sections = ["work", "about", "lab", "contact"]
+  const sections = ["home", "work", "about", "mission", "lab", "contact"]
     .map((id) => document.getElementById(id))
     .filter(Boolean);
+  const visibleSections = new Map();
+  const navigationAliases = { mission: "about" };
 
-  const sectionObserver = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
-
-    if (!visible) {
-      return;
-    }
+  function updateActiveNavigation() {
+    const visible = [...visibleSections.entries()]
+      .filter(([, state]) => state.isIntersecting)
+      .sort(([, first], [, second]) => second.intersectionRatio - first.intersectionRatio)[0];
+    const visibleId = visible?.[0] || "home";
+    const activeId = navigationAliases[visibleId] || visibleId;
 
     navLinks.forEach((link) => {
-      const active = link.getAttribute("href") === `#${visible.target.id}`;
+      const active = link.getAttribute("href") === `#${activeId}`;
       link.classList.toggle("is-active", active);
-      if (active) {
+      if (active && visibleId === activeId) {
         link.setAttribute("aria-current", "location");
       } else {
         link.removeAttribute("aria-current");
       }
     });
+  }
+
+  const sectionObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      visibleSections.set(entry.target.id, {
+        isIntersecting: entry.isIntersecting,
+        intersectionRatio: entry.intersectionRatio
+      });
+    });
+    updateActiveNavigation();
   }, {
     rootMargin: "-28% 0px -58%",
     threshold: [0.01, 0.15]
@@ -597,6 +743,7 @@ const focusSignals = [
   "Local AI workflows",
   "Visual interfaces"
 ];
+let focusSignalTimer = null;
 
 function updateLocalTime() {
   if (!localTime) {
@@ -611,12 +758,18 @@ function updateLocalTime() {
 }
 
 function rotateFocusSignal() {
+  window.clearInterval(focusSignalTimer);
+  focusSignalTimer = null;
+
   if (!focusSignal || reduceMotionQuery.matches) {
     return;
   }
 
   let index = 0;
-  window.setInterval(() => {
+  focusSignalTimer = window.setInterval(() => {
+    if (document.hidden) {
+      return;
+    }
     index = (index + 1) % focusSignals.length;
     focusSignal.textContent = focusSignals[index];
   }, 3200);
@@ -632,10 +785,20 @@ function initializeCardTilt() {
   }
 
   selectAll("[data-tilt]").forEach((card) => {
-    let frameRequested = false;
+    if (card.dataset.tiltReady === "true") {
+      return;
+    }
+
+    card.dataset.tiltReady = "true";
+    let tiltFrame = null;
     let latestEvent = null;
+    let cardActive = false;
 
     function renderTilt() {
+      tiltFrame = null;
+      if (!cardActive || !latestEvent || reduceMotionQuery.matches || !finePointerQuery.matches) {
+        return;
+      }
       const bounds = card.getBoundingClientRect();
       const x = (latestEvent.clientX - bounds.left) / bounds.width;
       const y = (latestEvent.clientY - bounds.top) / bounds.height;
@@ -644,23 +807,71 @@ function initializeCardTilt() {
       card.style.setProperty("--ry", `${((x - 0.5) * 3).toFixed(2)}deg`);
       card.style.setProperty("--card-x", `${(x * 100).toFixed(1)}%`);
       card.style.setProperty("--card-y", `${(y * 100).toFixed(1)}%`);
-      frameRequested = false;
     }
 
     card.addEventListener("pointermove", (event) => {
       latestEvent = event;
-      if (!frameRequested) {
-        frameRequested = true;
-        window.requestAnimationFrame(renderTilt);
+      cardActive = true;
+      if (!tiltFrame) {
+        tiltFrame = window.requestAnimationFrame(renderTilt);
       }
     });
 
     card.addEventListener("pointerleave", () => {
+      cardActive = false;
+      if (tiltFrame) {
+        window.cancelAnimationFrame(tiltFrame);
+        tiltFrame = null;
+      }
       card.style.setProperty("--rx", "0deg");
       card.style.setProperty("--ry", "0deg");
       card.style.setProperty("--card-x", "50%");
       card.style.setProperty("--card-y", "50%");
     });
+  });
+}
+
+function resetCardTilts() {
+  selectAll("[data-tilt]").forEach((card) => {
+    card.style.setProperty("--rx", "0deg");
+    card.style.setProperty("--ry", "0deg");
+    card.style.setProperty("--card-x", "50%");
+    card.style.setProperty("--card-y", "50%");
+  });
+}
+
+function initializeMagneticControls() {
+  if (!finePointerQuery.matches || reduceMotionQuery.matches) {
+    return;
+  }
+
+  selectAll(".hero-actions .button, .contact-actions .button").forEach((control) => {
+    if (control.dataset.magneticReady === "true") {
+      return;
+    }
+
+    control.dataset.magneticReady = "true";
+    control.addEventListener("pointermove", (event) => {
+      if (reduceMotionQuery.matches || !finePointerQuery.matches) {
+        return;
+      }
+      const bounds = control.getBoundingClientRect();
+      const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 6;
+      const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 5;
+      control.style.setProperty("--magnetic-x", `${x.toFixed(2)}px`);
+      control.style.setProperty("--magnetic-y", `${y.toFixed(2)}px`);
+    });
+    control.addEventListener("pointerleave", () => {
+      control.style.setProperty("--magnetic-x", "0px");
+      control.style.setProperty("--magnetic-y", "0px");
+    });
+  });
+}
+
+function resetMagneticControls() {
+  selectAll(".button").forEach((control) => {
+    control.style.setProperty("--magnetic-x", "0px");
+    control.style.setProperty("--magnetic-y", "0px");
   });
 }
 
@@ -676,6 +887,20 @@ const commandItems = selectAll("[data-command-keywords]");
 const commandEmpty = select("#command-empty");
 let commandReturnFocus = null;
 let selectedCommandIndex = 0;
+let restoreCommandFocus = true;
+
+commandSearch?.setAttribute("role", "combobox");
+commandSearch?.setAttribute("aria-autocomplete", "list");
+commandSearch?.setAttribute("aria-controls", "command-list");
+commandSearch?.setAttribute("aria-expanded", "true");
+commandItems.forEach((item, index) => {
+  item.id ||= `command-option-${index + 1}`;
+  item.setAttribute("role", "option");
+  item.setAttribute("aria-selected", "false");
+  item.tabIndex = -1;
+  item.firstElementChild?.setAttribute("aria-hidden", "true");
+  select("i", item)?.setAttribute("aria-hidden", "true");
+});
 
 function syncDialogBodyState() {
   const anyDialogOpen = selectAll("dialog").some((dialog) => dialog.open);
@@ -689,16 +914,23 @@ function visibleCommandItems() {
 function selectCommand(index) {
   const visibleItems = visibleCommandItems();
 
-  commandItems.forEach((item) => item.classList.remove("is-selected"));
+  commandItems.forEach((item) => {
+    item.classList.remove("is-selected");
+    item.setAttribute("aria-selected", "false");
+  });
 
   if (!visibleItems.length) {
     selectedCommandIndex = 0;
+    commandSearch?.removeAttribute("aria-activedescendant");
     return;
   }
 
   selectedCommandIndex = (index + visibleItems.length) % visibleItems.length;
-  visibleItems[selectedCommandIndex].classList.add("is-selected");
-  visibleItems[selectedCommandIndex].scrollIntoView({ block: "nearest" });
+  const selectedItem = visibleItems[selectedCommandIndex];
+  selectedItem.classList.add("is-selected");
+  selectedItem.setAttribute("aria-selected", "true");
+  commandSearch?.setAttribute("aria-activedescendant", selectedItem.id);
+  selectedItem.scrollIntoView({ block: "nearest" });
 }
 
 function filterCommands() {
@@ -716,13 +948,42 @@ function filterCommands() {
   selectCommand(0);
 }
 
+function resolveCommandReturnFocus(trigger) {
+  if (!(trigger instanceof HTMLElement)) {
+    return commandTrigger;
+  }
+  if (pulsePanel?.contains(trigger)) {
+    return pulseTrigger;
+  }
+  if (themeMenu?.contains(trigger)) {
+    return themeSwitcher;
+  }
+  if (mobileNavigationQuery.matches && navPanel?.contains(trigger)) {
+    return navToggle;
+  }
+  return trigger;
+}
+
+function restoreFocusTo(preferred, ...fallbacks) {
+  const target = [preferred, ...fallbacks].find((element) => (
+    element instanceof HTMLElement &&
+    element.isConnected &&
+    !element.inert &&
+    element.getClientRects().length > 0
+  ));
+  target?.focus({ preventScroll: true });
+}
+
 function openCommandDeck(trigger = document.activeElement) {
-  if (!commandDialog || commandDialog.open || scanDialog?.open) {
+  if (!bootFinished || !commandDialog || commandDialog.open || scanDialog?.open) {
     return;
   }
 
+  const returnTarget = resolveCommandReturnFocus(trigger);
   closeNavigation();
-  commandReturnFocus = trigger instanceof HTMLElement ? trigger : commandTrigger;
+  closePulse({ restoreFocus: false });
+  commandReturnFocus = returnTarget;
+  restoreCommandFocus = true;
   commandDialog.showModal();
   syncDialogBodyState();
 
@@ -733,7 +994,8 @@ function openCommandDeck(trigger = document.activeElement) {
   }
 }
 
-function closeCommandDeck() {
+function closeCommandDeck({ restoreFocus = true } = {}) {
+  restoreCommandFocus = restoreFocus;
   if (commandDialog?.open) {
     commandDialog.close();
   }
@@ -767,19 +1029,37 @@ commandDialog?.addEventListener("click", (event) => {
 
 commandDialog?.addEventListener("close", () => {
   syncDialogBodyState();
-  commandReturnFocus?.focus();
+  if (restoreCommandFocus) {
+    const returnTarget = commandReturnFocus;
+    window.setTimeout(() => {
+      restoreFocusTo(returnTarget, navToggle, commandTrigger, pulseTrigger);
+    }, 0);
+  }
 });
 
 commandItems.forEach((item) => {
   item.addEventListener("click", (event) => {
     const targetSelector = item.dataset.commandTarget;
+    const returnTarget = commandReturnFocus;
 
     if (targetSelector) {
       event.preventDefault();
-      closeCommandDeck();
+      closeCommandDeck({ restoreFocus: false });
       window.setTimeout(() => {
-        select(targetSelector)?.scrollIntoView({ behavior: reduceMotionQuery.matches ? "auto" : "smooth" });
+        navigateTo(targetSelector);
       }, 20);
+    } else if (item.hasAttribute("data-command-scan")) {
+      event.preventDefault();
+      closeCommandDeck({ restoreFocus: false });
+      window.setTimeout(() => openScanner(returnTarget), 40);
+    } else if (item.hasAttribute("data-command-pulse")) {
+      event.preventDefault();
+      closeCommandDeck({ restoreFocus: false });
+      window.setTimeout(() => openPulse(returnTarget), 40);
+    } else if (item.hasAttribute("data-command-theme")) {
+      event.preventDefault();
+      cycleTheme();
+      closeCommandDeck();
     } else if (item instanceof HTMLAnchorElement) {
       closeCommandDeck();
     }
@@ -789,6 +1069,9 @@ commandItems.forEach((item) => {
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
+    if (!bootFinished) {
+      return;
+    }
     if (commandDialog?.open) {
       closeCommandDeck();
     } else {
@@ -808,6 +1091,10 @@ document.addEventListener("keydown", (event) => {
 const terminalForm = select("#terminal-form");
 const terminalInput = select("#terminal-input");
 const terminalOutput = select("#terminal-output");
+const terminalCommandHistory = [];
+let terminalHistoryIndex = 0;
+let terminalHistoryDraft = "";
+let lastTerminalCompletion = "";
 
 function appendTerminalLine(content, className = "") {
   if (!terminalOutput) {
@@ -827,45 +1114,184 @@ function appendTerminalLine(content, className = "") {
   return line;
 }
 
-function executeTerminalCommand(rawCommand) {
-  const command = rawCommand.trim().toLowerCase();
+function appendTerminalLink(label, href) {
+  const line = appendTerminalLine("Source channel: ");
+  const link = document.createElement("a");
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = `${label} ↗ (opens in a new tab)`;
+  line?.appendChild(link);
+}
 
-  if (!command) {
+function appendTerminalResponse(response) {
+  if (Array.isArray(response)) {
+    response.forEach((line) => appendTerminalLine(line));
+  } else if (typeof response === "string" && response) {
+    appendTerminalLine(response);
+  }
+}
+
+const terminalCommands = {
+  help: {
+    description: "list available commands",
+    run: () => Object.entries(terminalCommands)
+      .map(([name, entry]) => `${name.padEnd(9, " ")} ${entry.description}`)
+      .join("\n")
+  },
+  whoami: {
+    description: "identify the operator",
+    run: () => "Adam // creative developer exploring game development, cinematic web experiences, Minecraft systems, and local AI."
+  },
+  projects: {
+    description: "list current case files",
+    run: () => [
+      "[001] NEON SECTOR-7 ........ IN DEVELOPMENT",
+      "[002] 2D GAME CHALLENGE .... DEBUGGING",
+      "[003] MINECRAFT ENGINEERING  FIELD NOTES",
+      "[004] LOCAL AI LAB ......... EXPERIMENTAL"
+    ]
+  },
+  stack: {
+    description: "inspect the working stack",
+    run: () => "WEB // HTML · CSS · JavaScript · Three.js exploration\nSYSTEMS // Java · Paper · databases\nLAB // Ollama · local models · image workflows\nGAMES + 3D // Godot · Unity · Unreal · Blender"
+  },
+  sector: {
+    description: "read Sector-7 telemetry",
+    run: () => [
+      "SECTOR-7 STATUS",
+      "Core......... ONLINE",
+      "Network...... STABLE",
+      "Operator..... ADAM",
+      "Interface.... READY"
+    ]
+  },
+  mission: {
+    description: "inspect the current mission",
+    run: (args) => {
+      if (args[0] === "open") {
+        window.setTimeout(() => navigateTo("#mission"), 80);
+        return "Opening operator history archive...";
+      }
+      return "BUILD → EXPERIMENT → LEARN → REPEAT. Type “mission open” to enter the operator history archive.";
+    }
+  },
+  matrix: {
+    description: "show the capability matrix",
+    run: () => "ACTIVE // Creative Web · Minecraft Engineering\nBUILDING // Interactive Worlds · 3D\nEXPLORING // Game Development\nEXPERIMENTING // Local AI"
+  },
+  status: {
+    description: "read interface health",
+    run: () => `Portfolio interface online. Scanner high score: ${readStorage(localStore, "ns7-high-score", "000")}.`
+  },
+  history: {
+    description: "show recent terminal commands",
+    run: () => terminalCommandHistory.length
+      ? terminalCommandHistory.slice(-10).map((entry, index) => `${String(index + 1).padStart(2, "0")}  ${entry}`).join("\n")
+      : "No command history in this connection."
+  },
+  theme: {
+    description: "cycle or choose a sector mode",
+    run: (args) => {
+      const requestedTheme = args[0];
+      const nextTheme = requestedTheme && themes.includes(requestedTheme)
+        ? applyTheme(requestedTheme, true)
+        : cycleTheme();
+      return `Interface shifted to ${themeLabels[nextTheme]}.`;
+    }
+  },
+  pulse: {
+    description: "open the local system guide",
+    run: () => {
+      window.setTimeout(() => openPulse(terminalInput), 80);
+      return "PULSE channel requested. Opening local guide...";
+    }
+  },
+  scan: {
+    description: "launch the anomaly scanner",
+    run: () => {
+      window.setTimeout(() => openScanner(terminalInput), 260);
+      return "Anomaly scanner initialized. Opening secure channel...";
+    }
+  },
+  github: {
+    description: "open the public source channel",
+    run: () => {
+      appendTerminalLink("github.com/doctordoomies", "https://github.com/doctordoomies");
+      return null;
+    }
+  },
+  clear: {
+    description: "clear terminal output",
+    run: () => {
+      terminalOutput?.replaceChildren();
+      return null;
+    }
+  }
+};
+
+const terminalAliases = { "?": "help", ls: "projects", guide: "pulse" };
+
+function executeTerminalCommand(rawCommand) {
+  const normalized = rawCommand.trim();
+  if (!normalized) {
     return;
   }
 
-  appendTerminalLine(command, "command-line");
+  const [rawName, ...args] = normalized.toLowerCase().split(/\s+/);
+  const commandName = terminalAliases[rawName] || rawName;
+  const command = terminalCommands[commandName];
 
-  const responses = {
-    help: "Available commands: whoami · projects · stack · mission · status · theme · scan · github · clear",
-    whoami: "Adam // creative developer exploring games, cinematic web experiences, Minecraft systems, and local AI.",
-    projects: "Active files: Neon Sector-7 · 2D Game Challenge · Minecraft Engineering · Local AI Lab.",
-    stack: "Creative web: HTML, CSS, JavaScript, Three.js // Systems: Java, Paper, databases // Lab: local models, Ollama, image workflows.",
-    mission: "Turn ambitious ideas into complete experiences—systems that work and worlds people want to explore.",
-    status: `All public systems online. Scanner high signal: ${readStorage(localStorage, "ns7-high-score", "000")}.`
-  };
-
-  if (responses[command]) {
-    appendTerminalLine(responses[command]);
-  } else if (command === "clear") {
-    terminalOutput?.replaceChildren();
-  } else if (command === "theme") {
-    const nextTheme = cycleTheme();
-    appendTerminalLine(`Interface shifted to ${themeLabels[nextTheme]}.`);
-  } else if (command === "scan") {
-    appendTerminalLine("Anomaly scanner initialized. Opening secure channel...");
-    window.setTimeout(() => openScanner(terminalInput), 260);
-  } else if (command === "github") {
-    const line = appendTerminalLine("Source channel: ");
-    const link = document.createElement("a");
-    link.href = "https://github.com/doctordoomies";
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "github.com/doctordoomies ↗";
-    line?.appendChild(link);
-  } else {
-    appendTerminalLine(`Unknown command: ${command}. Type "help" for a signal list.`, "error-line");
+  terminalCommandHistory.push(normalized);
+  if (terminalCommandHistory.length > 30) {
+    terminalCommandHistory.shift();
   }
+  terminalHistoryIndex = terminalCommandHistory.length;
+  terminalHistoryDraft = "";
+  appendTerminalLine(normalized, "command-line");
+
+  if (!command) {
+    appendTerminalLine(`Unknown command: ${commandName}. Type "help" for a signal list.`, "error-line");
+    return;
+  }
+
+  appendTerminalResponse(command.run(args));
+}
+
+function completeTerminalInput() {
+  if (!terminalInput) {
+    return false;
+  }
+
+  const value = terminalInput.value.toLowerCase();
+  if (!value.trim()) {
+    return false;
+  }
+  const themeMatch = value.match(/^theme\s+([^\s]*)$/);
+  const candidates = themeMatch
+    ? themes.filter((theme) => theme.startsWith(themeMatch[1]))
+    : Object.keys(terminalCommands).filter((name) => name.startsWith(value.trim()));
+
+  if (!candidates.length) {
+    return false;
+  }
+
+  if (candidates.length === 1) {
+    const completion = themeMatch ? `theme ${candidates[0]}` : candidates[0];
+    if (terminalInput.value.toLowerCase() === completion) {
+      return false;
+    }
+    terminalInput.value = completion;
+    lastTerminalCompletion = completion;
+    terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+  } else {
+    if (lastTerminalCompletion === value) {
+      return false;
+    }
+    appendTerminalLine(`Matches: ${candidates.join(" · ")}`, "system-line");
+    lastTerminalCompletion = value;
+  }
+  return true;
 }
 
 terminalForm?.addEventListener("submit", (event) => {
@@ -876,11 +1302,172 @@ terminalForm?.addEventListener("submit", (event) => {
   }
 });
 
+terminalInput?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowUp" && terminalCommandHistory.length) {
+    event.preventDefault();
+    if (terminalHistoryIndex === terminalCommandHistory.length) {
+      terminalHistoryDraft = terminalInput.value;
+    }
+    terminalHistoryIndex = Math.max(0, terminalHistoryIndex - 1);
+    terminalInput.value = terminalCommandHistory[terminalHistoryIndex];
+    terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+  } else if (event.key === "ArrowDown" && terminalCommandHistory.length) {
+    event.preventDefault();
+    terminalHistoryIndex = Math.min(terminalCommandHistory.length, terminalHistoryIndex + 1);
+    terminalInput.value = terminalHistoryIndex === terminalCommandHistory.length
+      ? terminalHistoryDraft
+      : terminalCommandHistory[terminalHistoryIndex];
+    terminalInput.setSelectionRange(terminalInput.value.length, terminalInput.value.length);
+  } else if (event.key === "Tab" && !event.shiftKey && completeTerminalInput()) {
+    event.preventDefault();
+  }
+});
+
+terminalInput?.addEventListener("input", () => {
+  if (terminalInput.value.toLowerCase() !== lastTerminalCompletion) {
+    lastTerminalCompletion = "";
+  }
+});
+
 selectAll("[data-terminal-command]").forEach((button) => {
   button.addEventListener("click", () => {
     executeTerminalCommand(button.dataset.terminalCommand || "");
     terminalInput?.focus();
   });
+});
+
+/* ---------------------------------------------------------
+   Pulse // local scripted system guide
+   --------------------------------------------------------- */
+
+const pulseSystem = select(".pulse-system");
+const pulseTrigger = select("#pulse-trigger");
+const pulsePanel = select("#pulse-panel");
+const pulseClose = select("#pulse-close");
+const pulseResponse = select("#pulse-response");
+let pulseReturnFocus = null;
+let pulseResponseTimer = null;
+let pulseActionTimer = null;
+let pulseRevealY = Number.POSITIVE_INFINITY;
+
+const pulseResponses = {
+  adam: "Adam is a creative developer exploring games, interactive web experiences, Java and Paper systems, 3D, and local AI workflows.",
+  sector: "Neon Sector-7 is the fictional operating system and deep-space station built around Adam’s portfolio. Every case file is a real project or field of experimentation.",
+  builds: "Adam builds playable ideas, cinematic interfaces, Minecraft systems, game prototypes, and offline AI experiments—then keeps iterating as each system comes online.",
+  projects: "Opening the Project Archive. Four current signals are indexed."
+};
+
+function setPulseResponse(message) {
+  if (!pulseResponse) {
+    return;
+  }
+
+  window.clearTimeout(pulseResponseTimer);
+  window.clearTimeout(pulseActionTimer);
+  pulseResponse.classList.add("is-receiving");
+  const revealResponse = () => {
+    pulseResponse.textContent = message;
+    pulseResponse.classList.remove("is-receiving");
+  };
+
+  if (reduceMotionQuery.matches) {
+    revealResponse();
+  } else {
+    pulseResponseTimer = window.setTimeout(revealResponse, 120);
+  }
+}
+
+function syncPulseVisibility() {
+  const shouldMute =
+    window.innerWidth <= 430 &&
+    pulsePanel?.hidden &&
+    window.scrollY < pulseRevealY;
+
+  pulseSystem?.classList.toggle("is-hero-muted", Boolean(shouldMute));
+}
+
+function updatePulseRevealPoint() {
+  pulseRevealY = hero
+    ? hero.offsetTop + hero.offsetHeight - 120
+    : window.innerHeight;
+  syncPulseVisibility();
+}
+
+function openPulse(trigger = document.activeElement) {
+  if (!bootFinished || !pulsePanel || !pulseTrigger) {
+    return;
+  }
+
+  closeNavigation();
+  closeThemeMenu();
+  if (commandDialog?.open) {
+    closeCommandDeck({ restoreFocus: false });
+  }
+  pulseReturnFocus = trigger instanceof HTMLElement ? trigger : pulseTrigger;
+  pulseSystem?.classList.remove("is-hero-muted");
+  pulseSystem?.classList.add("is-open");
+  pulsePanel.hidden = false;
+  pulseTrigger.setAttribute("aria-expanded", "true");
+  pulseTrigger.setAttribute("aria-label", "Close Pulse system guide");
+  window.setTimeout(() => pulseClose?.focus({ preventScroll: true }), 0);
+}
+
+function closePulse({ restoreFocus = true } = {}) {
+  if (!pulsePanel || pulsePanel.hidden) {
+    return;
+  }
+
+  window.clearTimeout(pulseResponseTimer);
+  window.clearTimeout(pulseActionTimer);
+  pulseResponse?.classList.remove("is-receiving");
+  pulseSystem?.classList.remove("is-open");
+  pulsePanel.hidden = true;
+  syncPulseVisibility();
+  pulseTrigger?.setAttribute("aria-expanded", "false");
+  pulseTrigger?.setAttribute("aria-label", "Open Pulse system guide");
+  if (restoreFocus) {
+    restoreFocusTo(pulseReturnFocus, pulseTrigger);
+  }
+}
+
+pulseTrigger?.addEventListener("click", () => {
+  if (pulsePanel?.hidden) {
+    openPulse(pulseTrigger);
+  } else {
+    closePulse();
+  }
+});
+
+pulseClose?.addEventListener("click", () => closePulse());
+
+selectAll("[data-pulse-question]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const question = button.dataset.pulseQuestion;
+    setPulseResponse(pulseResponses[question] || "That signal is not in my local response matrix.");
+    if (question === "projects") {
+      window.clearTimeout(pulseActionTimer);
+      pulseActionTimer = window.setTimeout(() => {
+        closePulse({ restoreFocus: false });
+        navigateTo("#work");
+      }, reduceMotionQuery.matches ? 0 : 460);
+    }
+  });
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!pulsePanel?.hidden && !pulseSystem?.contains(event.target)) {
+    const focusableTarget = event.target.closest(
+      "a, button, input, select, textarea, [tabindex]:not([tabindex='-1'])"
+    );
+    closePulse({ restoreFocus: !focusableTarget });
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && pulsePanel && !pulsePanel.hidden) {
+    event.preventDefault();
+    closePulse();
+  }
 });
 
 /* ---------------------------------------------------------
@@ -929,10 +1516,11 @@ const timeDisplay = select("#scan-time");
 const highScoreDisplay = select("#scan-high-score");
 const statusDisplay = select("#scan-status");
 const scanAnnouncement = select("#scan-announcement");
+const scanWindow = select(".sector-scan-window", scanDialog);
 
 let score = 0;
 let streak = 0;
-let highScore = Number.parseInt(readStorage(localStorage, "ns7-high-score", "0"), 10) || 0;
+let highScore = Number.parseInt(readStorage(localStore, "ns7-high-score", "0"), 10) || 0;
 let gameRunning = false;
 let gamePaused = false;
 let endTime = 0;
@@ -942,6 +1530,11 @@ let spawnTimer = null;
 let scanReturnFocus = null;
 const anomalyTimers = new Map();
 const effectTimers = new Set();
+const anomalyTypes = {
+  standard: { className: "", label: "Energy signal", points: 100, lifetime: 1 },
+  unstable: { className: "is-unstable", label: "Moving unstable signal", points: 150, lifetime: 1.3 },
+  rare: { className: "is-rare", label: "Rare purple signal", points: 300, lifetime: 1.4 }
+};
 
 function paddedScore(value) {
   return String(value).padStart(3, "0");
@@ -969,6 +1562,7 @@ function setScanStartMessage() {
   scoreDisplay.textContent = "000";
   timeDisplay.textContent = "20";
   statusDisplay.textContent = "Standby";
+  scanWindow?.classList.remove("is-new-high");
   updateHighScoreDisplay();
   scanField?.setAttribute("tabindex", "-1");
 }
@@ -979,8 +1573,10 @@ function openScanner(trigger = document.activeElement) {
   }
 
   if (commandDialog?.open) {
-    closeCommandDeck();
+    closeCommandDeck({ restoreFocus: false });
   }
+
+  closePulse({ restoreFocus: false });
 
   scanReturnFocus = trigger instanceof HTMLElement ? trigger : select("[data-open-scan]");
   updateHighScoreDisplay();
@@ -1006,7 +1602,8 @@ function clearAnomalyTimer(anomaly) {
 function removeAnomalies() {
   anomalyTimers.forEach((timer) => window.clearTimeout(timer));
   anomalyTimers.clear();
-  selectAll(".scan-anomaly, .scan-hit", scanField).forEach((element) => element.remove());
+  selectAll(".scan-anomaly, .scan-hit, .scan-burst", scanField).forEach((element) => element.remove());
+  scanField?.classList.remove("is-impact");
 }
 
 function clearGameTimers() {
@@ -1050,6 +1647,31 @@ function createHitText(x, y, points) {
   effectTimers.add(timer);
 }
 
+function createScanBurst(x, y, isStrong = false) {
+  if (!scanField) {
+    return;
+  }
+
+  const burst = document.createElement("span");
+  burst.className = `scan-burst${isStrong ? " is-strong" : ""}`;
+  burst.style.left = `${x}px`;
+  burst.style.top = `${y}px`;
+  burst.setAttribute("aria-hidden", "true");
+  scanField.appendChild(burst);
+
+  if (isStrong) {
+    scanField.classList.remove("is-impact");
+    scanField.classList.add("is-impact");
+  }
+
+  const timer = window.setTimeout(() => {
+    burst.remove();
+    scanField.classList.remove("is-impact");
+    effectTimers.delete(timer);
+  }, 480);
+  effectTimers.add(timer);
+}
+
 function neutralizeAnomaly(anomaly) {
   if (!gameRunning || gamePaused || !anomaly?.isConnected) {
     return;
@@ -1058,16 +1680,39 @@ function neutralizeAnomaly(anomaly) {
   clearAnomalyTimer(anomaly);
   streak += 1;
   const bonus = Math.floor(streak / 5) * 25;
-  const points = 100 + bonus;
+  const points = (Number.parseInt(anomaly.dataset.points || "100", 10) || 100) + bonus;
   score += points;
 
   scoreDisplay.textContent = paddedScore(score);
   statusDisplay.textContent = streak >= 5 ? `Combo x${streak}` : "Scanning";
 
-  const x = Number.parseFloat(anomaly.style.left) || 0;
-  const y = Number.parseFloat(anomaly.style.top) || 0;
+  const fieldBounds = scanField.getBoundingClientRect();
+  const anomalyBounds = anomaly.getBoundingClientRect();
+  const x = anomalyBounds.left - fieldBounds.left + (anomalyBounds.width / 2);
+  const y = anomalyBounds.top - fieldBounds.top + (anomalyBounds.height / 2);
   createHitText(x, y, points);
+  createScanBurst(x, y, anomaly.dataset.type === "rare");
   anomaly.remove();
+  scanField.focus({ preventScroll: true });
+}
+
+function positionAnomaly(anomaly) {
+  if (!scanField) {
+    return;
+  }
+
+  const fieldWidth = scanField.clientWidth;
+  const fieldHeight = scanField.clientHeight;
+  const targetSize = 46;
+  const padding = fieldWidth < 430 ? 25 : 44;
+  const maximumX = Math.max(padding, fieldWidth - targetSize - padding);
+  const maximumY = Math.max(padding, fieldHeight - targetSize - padding);
+  const xRatio = Number.parseFloat(anomaly.dataset.xRatio || "0.5");
+  const yRatio = Number.parseFloat(anomaly.dataset.yRatio || "0.5");
+  const x = padding + xRatio * Math.max(0, maximumX - padding);
+  const y = padding + yRatio * Math.max(0, maximumY - padding);
+  anomaly.style.left = `${x}px`;
+  anomaly.style.top = `${y}px`;
 }
 
 function createAnomaly() {
@@ -1084,27 +1729,26 @@ function createAnomaly() {
   }
 
   const anomaly = document.createElement("button");
+  const typeRoll = Math.random();
+  const typeName = typeRoll > 0.9 ? "rare" : typeRoll > 0.68 ? "unstable" : "standard";
+  const type = anomalyTypes[typeName];
   anomaly.type = "button";
-  anomaly.className = "scan-anomaly";
+  anomaly.className = `scan-anomaly ${type.className}`.trim();
   anomaly.tabIndex = -1;
-  anomaly.setAttribute("aria-label", "Unstable energy signal");
-
-  const fieldWidth = scanField.clientWidth;
-  const fieldHeight = scanField.clientHeight;
-  const targetSize = 46;
-  const padding = fieldWidth < 430 ? 25 : 44;
-  const maximumX = Math.max(padding, fieldWidth - targetSize - padding);
-  const maximumY = Math.max(padding, fieldHeight - targetSize - padding);
-  const x = padding + Math.random() * Math.max(0, maximumX - padding);
-  const y = padding + Math.random() * Math.max(0, maximumY - padding);
-
-  anomaly.style.left = `${x}px`;
-  anomaly.style.top = `${y}px`;
+  anomaly.dataset.type = typeName;
+  anomaly.dataset.points = String(type.points);
+  anomaly.dataset.xRatio = String(Math.random());
+  anomaly.dataset.yRatio = String(Math.random());
+  anomaly.setAttribute("aria-label", `${type.label}, worth ${type.points} points`);
+  anomaly.style.setProperty("--move-x", `${Math.random() * 34 - 17}px`);
+  anomaly.style.setProperty("--move-y", `${Math.random() * 28 - 14}px`);
+  positionAnomaly(anomaly);
+  anomaly.addEventListener("pointerdown", (event) => event.preventDefault());
   anomaly.addEventListener("click", () => neutralizeAnomaly(anomaly));
   scanField.appendChild(anomaly);
 
   const elapsed = Math.max(0, 20000 - (endTime - performance.now()));
-  const lifetime = Math.max(720, 1450 - elapsed * 0.022) + Math.random() * 300;
+  const lifetime = (Math.max(720, 1450 - elapsed * 0.022) + Math.random() * 300) * type.lifetime;
   const timer = window.setTimeout(() => {
     anomalyTimers.delete(anomaly);
     if (anomaly.isConnected) {
@@ -1144,7 +1788,7 @@ function finishGame() {
 
   const previousHighScore = highScore;
   highScore = Math.max(highScore, score);
-  writeStorage(localStorage, "ns7-high-score", String(highScore));
+  writeStorage(localStore, "ns7-high-score", String(highScore));
   updateHighScoreDisplay();
   statusDisplay.textContent = "Complete";
   scanField?.setAttribute("tabindex", "-1");
@@ -1176,7 +1820,8 @@ function finishGame() {
   }
 
   if (score > previousHighScore) {
-    showToast(`NEW HIGH SIGNAL // ${paddedScore(score)}`);
+    scanWindow?.classList.add("is-new-high");
+    showToast(`NEW HIGH SCORE // ${paddedScore(score)}`);
   }
 
   window.setTimeout(() => select("[data-scan-start]", scanMessage)?.focus(), 0);
@@ -1215,6 +1860,7 @@ function startGame() {
   scoreDisplay.textContent = "000";
   timeDisplay.textContent = "20";
   statusDisplay.textContent = "Scanning";
+  scanWindow?.classList.remove("is-new-high");
   scanAnnouncement.textContent = "Scan started. Twenty seconds remaining.";
   scanMessage.classList.add("is-hidden");
   scanField.setAttribute("tabindex", "0");
@@ -1227,12 +1873,6 @@ function startGame() {
 
 selectAll("[data-open-scan]").forEach((button) => {
   button.addEventListener("click", () => openScanner(button));
-});
-
-select("[data-command-scan]")?.addEventListener("click", (event) => {
-  event.preventDefault();
-  closeCommandDeck();
-  window.setTimeout(() => openScanner(commandTrigger), 40);
 });
 
 scanMessage?.addEventListener("click", (event) => {
@@ -1257,7 +1897,10 @@ scanDialog?.addEventListener("click", (event) => {
 scanDialog?.addEventListener("close", () => {
   stopGame({ resetMessage: true });
   syncDialogBodyState();
-  scanReturnFocus?.focus();
+  const returnTarget = scanReturnFocus;
+  window.setTimeout(() => {
+    restoreFocusTo(returnTarget, navToggle, commandTrigger, select("[data-open-scan]"));
+  }, 0);
 });
 
 scanField?.addEventListener("keydown", (event) => {
@@ -1272,6 +1915,11 @@ scanField?.addEventListener("keydown", (event) => {
     }
   }
 });
+
+window.addEventListener("resize", () => {
+  selectAll(".scan-anomaly", scanField).forEach(positionAnomaly);
+  window.requestAnimationFrame(updatePulseRevealPoint);
+}, { passive: true });
 
 document.addEventListener("visibilitychange", () => {
   document.documentElement.classList.toggle("page-hidden", document.hidden);
@@ -1307,26 +1955,43 @@ enablePointerLighting();
 initializeReveals();
 initializeActiveNavigation();
 initializeCardTilt();
+initializeMagneticControls();
+updatePulseRevealPoint();
 updateScrollInterface();
 updateLocalTime();
 rotateFocusSignal();
 updateHighScoreDisplay();
 window.setInterval(updateLocalTime, 1000);
 
-reduceMotionQuery.addEventListener?.("change", (event) => {
-  if (event.matches) {
+function handleMotionPreferenceChange() {
+  if (reduceMotionQuery.matches) {
     particlesContainer?.replaceChildren();
-    pointerAura?.classList.remove("is-active");
-    hero?.style.setProperty("--parallax-x", "0");
-    hero?.style.setProperty("--parallax-y", "0");
-    document.documentElement.style.setProperty("--stellar-x", "0px");
-    document.documentElement.style.setProperty("--stellar-y", "0px");
-    document.documentElement.style.setProperty("--stellar-far-x", "0px");
-    document.documentElement.style.setProperty("--stellar-far-y", "0px");
+    resetPointerWorld();
+    resetCardTilts();
+    resetMagneticControls();
     revealElements.forEach((element) => element.classList.add("is-visible"));
     finishBoot();
+    rotateFocusSignal();
   } else {
     createParticles();
+    enablePointerLighting();
+    initializeCardTilt();
+    initializeMagneticControls();
+    rotateFocusSignal();
   }
-    // rerun changes
+
+  updateScrollInterface();
+}
+
+reduceMotionQuery.addEventListener?.("change", handleMotionPreferenceChange);
+finePointerQuery.addEventListener?.("change", () => {
+  if (finePointerQuery.matches && !reduceMotionQuery.matches) {
+    enablePointerLighting();
+    initializeCardTilt();
+    initializeMagneticControls();
+  } else {
+    resetPointerWorld();
+    resetCardTilts();
+    resetMagneticControls();
+  }
 });
